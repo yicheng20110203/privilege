@@ -124,7 +124,6 @@ export default {
         this.dataListLoading = false
       }).catch(() => {
         this.dataListLoading = false
-        console.log('获取角色列表异常')
       }
       )
     },
@@ -135,12 +134,11 @@ export default {
       this.dialogVisible = true
       this.deleteId = this.tableData[index].id
       this.deleteIndex = index
-      console.log(index, row)
+      // console.log(index, row)
     },
     // 关闭删除框
     handleClose() {
       this.dialogVisible = false
-      console.log('handleClose')
     },
     // 删除角色
     delRole() {
@@ -156,13 +154,11 @@ export default {
       )
     },
     handleSizeChange(val) {
-      console.log(`每页 ${val} 条`)
       this.pageSize = val
       this.getRoles()
     },
     handleCurrentChange(val) {
       this.currentPage = val
-      console.log(`当前页: ${val}`)
       this.getRoles()
     },
     // 新增或编辑角色

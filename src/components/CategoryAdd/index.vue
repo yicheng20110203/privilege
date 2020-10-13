@@ -3,10 +3,11 @@
     title="添加分类"
     :close-on-click-modal="false"
     :visible.sync="visible"
-    width="20%"
+    width="25%"
     center
+    @closed="closedDialog"
   >
-    <el-form ref="dataForm" :model="dataForm" :inline="true" size="medium" label-suffix=":">
+    <el-form ref="dataForm" :rules="dataRule" :model="dataForm" :inline="true" size="medium" label-suffix=":">
       <el-form-item label="分类名称" prop="name">
         <el-input v-model="dataForm.name" placeholder="请输入分类名称" maxlength="15" clearable />
       </el-form-item>
@@ -35,6 +36,10 @@ export default {
   data() {
     return {
       visible: false,
+      dataRule: {
+        name: [{ required: true, message: '分类名称不能为空', trigger: 'blur' }],
+        desc: [{ required: true, message: '分类简介不能为空', trigger: 'blur' }]
+      },
       dataForm: {
         name: '',
         desc: ''
@@ -44,30 +49,40 @@ export default {
   methods: {
     // 添加分类
     dataFormSubmit() {
-      console.log('添加分类参数==', this.$service.adornData({
-        'name': this.dataForm.name,
-        'type': this.categoryType,
-        'desc': this.dataForm.desc
-      }))
-      categoryAddTree(this.$service.adornData({
-        'name': this.dataForm.name,
-        'type': this.categoryType,
-        'desc': this.dataForm.desc
-      })).then(response => {
-        if (response && response.code === 0) {
-          this.$message({
-            message: '分类添加成功',
-            type: 'success',
-            duration: 1500,
-            onClose: () => {
-              this.visible = false
-              this.$emit('refreshCategoryDataList')
+      this.$refs.dataForm.validate((valid) => {
+        if (valid) {
+          categoryAddTree(this.$service.adornData({
+            'name': this.dataForm.name,
+            'type': this.categoryType,
+            'desc': this.dataForm.desc
+          })).then(response => {
+            if (response && response.code === 0) {
+              this.$message({
+                message: '分类添加成功',
+                type: 'success',
+                duration: 1500,
+                onClose: () => {
+                  this.visible = false
+                  this.resetForm('dataForm')
+                  this.$emit('refreshCategoryDataList')
+                }
+              })
+            } else {
+              this.$message.error(response.msg)
             }
           })
         } else {
-          this.$message.error(response.msg)
+          return false
         }
       })
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+    },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
     },
     openDialog() {
       this.visible = true

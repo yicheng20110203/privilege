@@ -7,6 +7,7 @@
             <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入视频名称" clearable />
           </el-form-item>
           <el-button type="primary" @click="getDataList({ 'type': materialvideoType })">查询</el-button>
+          <el-button @click="resetForm('dataForm')">重置</el-button>
           <el-button type="warning" @click="uploadVideoHandle">+上传视频</el-button>
           <el-container>
             <el-aside width="240px">
@@ -24,12 +25,14 @@
                   />
                 </div>
               </div>
-              <tissue-tree
+              <category-tree
                 v-if="videoCategoryList.length"
+                ref="CategoryTree"
                 :data-tree="videoCategoryList"
                 :default-props="defaultProps"
                 :category-type="materialCategoryType"
                 @nodeClick="switchCategory"
+                @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
               />
             </el-aside>
             <el-main>
@@ -88,6 +91,7 @@
             <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入音频名称" clearable />
           </el-form-item>
           <el-button type="primary" @click="getDataList({ 'type': materialaudioType })">查询</el-button>
+          <el-button @click="resetForm('dataForm')">重置</el-button>
           <el-button type="warning" @click="uploadAudioHandle">+上传音频</el-button>
           <el-container>
             <el-aside width="240px">
@@ -105,12 +109,14 @@
                   />
                 </div>
               </div>
-              <tissue-tree
+              <category-tree
                 v-if="audioCategoryList.length"
+                ref="CategoryTree"
                 :data-tree="audioCategoryList"
                 :default-props="defaultProps"
                 :category-type="materialCategoryType"
                 @nodeClick="switchCategory"
+                @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
               />
             </el-aside>
             <el-main>
@@ -152,6 +158,7 @@
             <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入文章名称" clearable />
           </el-form-item>
           <el-button type="primary" @click="getDataList({ 'type': materialarticleType })">查询</el-button>
+          <el-button @click="resetForm('dataForm')">重置</el-button>
           <el-button type="warning" @click="uploadArticleHandle">+创建文章</el-button>
           <el-container>
             <el-aside width="240px">
@@ -169,12 +176,14 @@
                   />
                 </div>
               </div>
-              <tissue-tree
+              <category-tree
                 v-if="articleCategoryList.length"
+                ref="CategoryTree"
                 :data-tree="articleCategoryList"
                 :default-props="defaultProps"
                 :category-type="materialCategoryType"
                 @nodeClick="switchCategory"
+                @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
               />
             </el-aside>
             <el-main>
@@ -184,8 +193,8 @@
                 <el-table-column prop="create_time_desc" label="上传时间" header-align="center" align="center" />
                 <el-table-column label="操作" fixed="right" header-align="center" align="center">
                   <template slot-scope="scope">
-                    <el-button type="text" size="small" @click="previewArticleHandle(scope.row)">预览</el-button>
-                    <el-button type="text" size="small" @click="editArticleHandle(scope.row)">编辑</el-button>
+                    <el-button type="text" size="small" @click="previewArticleHandle(scope.row.id)">预览</el-button>
+                    <el-button type="text" size="small" @click="editArticleHandle(scope.row.id)">编辑</el-button>
                     <el-button type="text" size="small" @click="deleteHandle(scope.row)">删除</el-button>
                   </template>
                 </el-table-column>
@@ -210,6 +219,7 @@
             <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入图片名称" clearable />
           </el-form-item>
           <el-button type="primary" @click="getDataList({ 'type': materialpictureType })">查询</el-button>
+          <el-button @click="resetForm('dataForm')">重置</el-button>
           <el-button type="warning" @click="uploadPictureHandle">+上传图片</el-button>
           <el-container>
             <el-aside width="240px">
@@ -227,12 +237,14 @@
                   />
                 </div>
               </div>
-              <tissue-tree
+              <category-tree
                 v-if="pictureCategoryList.length"
+                ref="CategoryTree"
                 :data-tree="pictureCategoryList"
                 :default-props="defaultProps"
                 :category-type="materialCategoryType"
                 @nodeClick="switchCategory"
+                @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
               />
             </el-aside>
             <el-main>
@@ -298,6 +310,13 @@
       :upload-type="activeName"
       @refreshVideoDataList="getDataList({ 'type': materialType })"
     />
+    <audio-add-or-update
+      ref="AudioAddOrUpdate"
+      :menu-category="categoryList"
+      :submit-type="materialType"
+      :upload-type="activeName"
+      @refreshVideoDataList="getDataList({ 'type': materialType })"
+    />
     <article-add-or-update
       ref="ArticleAddOrUpdate"
       :menu-category="categoryList"
@@ -310,37 +329,49 @@
       :submit-type="materialType"
       @refreshEditDataList="getDataList({ 'type': materialType })"
     />
+    <material-picture-edit
+      ref="MaterialPictureEdit"
+      :menu-category="categoryList"
+      :submit-type="materialType"
+      @refreshPictureEditDataList="getDataList({ 'type': materialType })"
+    />
     <material-detail
       ref="MaterialDetail"
       :submit-type="materialType"
       :upload-type="activeName"
+      @closeAliPlay="closedVideoHandle"
     />
     <material-article-detail
       ref="MaterialArticleDetail"
+      :submit-type="materialType"
     />
   </div>
 </template>
 
 <script>
 import { getMaterialList, materialDelete } from '@/api/material'
-import tissueTree from '@/components/Tree/index'
+import CategoryTree from '@/components/Tree/index'
 import categoryAdd from '@/components/CategoryAdd/index'
 import { getCategoryListTree } from '@/api/categorytree'
 import videoAdd from './material-video-add-or-update'
 import MaterialEdit from './material-edit'
+import MaterialPictureEdit from './material-picture-update'
 import MaterialDetail from './material-detail'
 import MaterialArticleDetail from './material-article-detail'
+import AudioAddOrUpdate from './material-audio-add-or-update'
 import ArticleAddOrUpdate from './material-article-add-or-update'
 export default {
   name: 'MaterialManagement',
   components: {
-    tissueTree,
+    CategoryTree,
     categoryAdd,
     videoAdd,
     MaterialEdit,
     MaterialDetail,
+    AudioAddOrUpdate,
     ArticleAddOrUpdate,
-    MaterialArticleDetail
+    MaterialArticleDetail,
+    MaterialPictureEdit
   },
   data() {
     return {
@@ -350,6 +381,7 @@ export default {
       pageSize: 10,
       totalPage: 0,
       categorykey: '',
+      reFresh: true, // 组件刷新
       dataList: [], // 获取视频数据
       audioDataList: [], // 获取音频数据
       articleDataList: [], // 获取音频数据
@@ -361,7 +393,7 @@ export default {
       articleCategoryList: [], // 文章-菜单-列表
       pictureCategoryList: [], // 图片-菜单-列表
       materialType: 1, // 素材-类型 默认视频
-      menuSelect: [], // 添加分类，回调刷新菜单
+      menuSelect: [6], // 添加分类，回调刷新菜单
       materialCategoryType: 6, // 根据tab-添加-分类
       materialvideoType: 1, // 素材-视频-类型
       materialaudioType: 2, // 素材-音频-类型
@@ -385,36 +417,89 @@ export default {
       }
     }
   },
-  created() {
-    // 获取列表方法
-    this.getDataList({ 'type': this.materialvideoType })
-    // 获取分类方法
-    this.getCategoryList({ 'types': this.videoCategoryType })
+  computed: {
+
   },
-  methods: {
-    // 点击tab,切换数据
-    handleClick(tab, event) {
-      switch (tab.name) {
+  watch: {
+    articleDataList() {
+      this.reFresh = false
+      this.$nextTick(() => {
+        this.reFresh = true
+      })
+    }
+  },
+  created() {
+    if (sessionStorage.getItem('active_name') != null) {
+      this.activeName = sessionStorage.getItem('active_name')
+      switch (this.activeName) {
         case 'video':
           this.materialType = this.materialvideoType
+          this.materialCategoryType = this.videoCategoryAdd
           this.getDataList({ 'type': this.materialvideoType })
           this.menuSelect = this.videoCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.videoCategoryType })
           break
         case 'audio':
           this.materialType = this.materialaudioType
+          this.materialCategoryType = this.audioCategoryAdd
           this.getDataList({ 'type': this.materialaudioType })
           this.menuSelect = this.audioCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.audioCategoryType })
           break
         case 'article':
           this.materialType = this.materialarticleType
+          this.materialCategoryType = this.articleCategoryAdd
           this.getDataList({ 'type': this.materialarticleType })
           this.menuSelect = this.articleCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.articleCategoryType })
           break
         case 'image':
           this.materialType = this.materialpictureType
+          this.materialCategoryType = this.pictureCategoryAdd
+          this.getDataList({ 'type': this.materialpictureType })
+          this.menuSelect = this.pictureCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.pictureCategoryType })
+          break
+      }
+    } else {
+      // 获取列表方法
+      this.getDataList({ 'type': this.materialType })
+      // 获取分类方法
+      this.getCategoryList({ 'types': this.menuSelect })
+    }
+  },
+  methods: {
+    // 点击tab,切换数据
+    handleClick(tab, event) {
+      switch (tab.name) {
+        case 'video':
+          sessionStorage.setItem('active_name', 'video')
+          this.materialType = this.materialvideoType
+          this.materialCategoryType = this.videoCategoryAdd
+          this.getDataList({ 'type': this.materialvideoType })
+          this.menuSelect = this.videoCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.videoCategoryType })
+          break
+        case 'audio':
+          sessionStorage.setItem('active_name', 'audio')
+          this.materialType = this.materialaudioType
+          this.materialCategoryType = this.audioCategoryAdd
+          this.getDataList({ 'type': this.materialaudioType })
+          this.menuSelect = this.audioCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.audioCategoryType })
+          break
+        case 'article':
+          sessionStorage.setItem('active_name', 'article')
+          this.materialType = this.materialarticleType
+          this.materialCategoryType = this.articleCategoryAdd
+          this.getDataList({ 'type': this.materialarticleType })
+          this.menuSelect = this.articleCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.articleCategoryType })
+          break
+        case 'image':
+          sessionStorage.setItem('active_name', 'image')
+          this.materialType = this.materialpictureType
+          this.materialCategoryType = this.pictureCategoryAdd
           this.getDataList({ 'type': this.materialpictureType })
           this.menuSelect = this.pictureCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.pictureCategoryType })
@@ -441,6 +526,7 @@ export default {
     },
     // 获取分类
     getCategoryList(types = {}) {
+      this.dataListLoading = true
       getCategoryListTree(this.$service.adornData({
         ...types
       })).then(res => {
@@ -471,26 +557,16 @@ export default {
           this.pictureCategoryList = []
         }
       })
+      this.dataListLoading = false
     },
     // 添加分类
     categoryAddHandle() {
-      // 根据tab,修改添加分类
-      switch (this.activeName) {
-        case 'video':
-          this.materialCategoryType = this.videoCategoryAdd
-          break
-        case 'audio':
-          this.materialCategoryType = this.audioCategoryAdd
-          break
-        case 'article':
-          this.materialCategoryType = this.articleCategoryAdd
-          break
-        case 'image':
-          this.materialCategoryType = this.pictureCategoryAdd
-          break
-      }
       // 调用组件方法,打开组件
       this.$refs.categoryAdd.openDialog()
+    },
+    // 重置
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
     },
     // 上传视频
     uploadVideoHandle() {
@@ -501,9 +577,9 @@ export default {
     },
     // 上传音频
     uploadAudioHandle() {
-      this.$refs.videoAdd.openDialog()
+      this.$refs.AudioAddOrUpdate.openDialog()
       this.$nextTick(() => {
-        this.$refs.videoAdd.init(this.activeName)
+        this.$refs.AudioAddOrUpdate.init()
       })
     },
     // 上传图片
@@ -516,6 +592,9 @@ export default {
     // 上传文章
     uploadArticleHandle() {
       this.$refs.ArticleAddOrUpdate.openDialog()
+      this.$nextTick(() => {
+        this.$refs.ArticleAddOrUpdate.resetForm('dataForm')
+      })
     },
     // 预览视频
     previewVideoHandle(data) {
@@ -523,6 +602,10 @@ export default {
       this.$nextTick(() => {
         this.$refs.MaterialDetail.init(data)
       })
+    },
+    // 预览窗口关闭，回调
+    closedVideoHandle() {
+      this.$refs.MaterialDetail.dispose()
     },
     // 预览音频
     previewAudioHandle(data) {
@@ -532,10 +615,10 @@ export default {
       })
     },
     // 预览文章
-    previewArticleHandle(data) {
+    previewArticleHandle(id) {
       this.$refs.MaterialArticleDetail.openDialog()
       this.$nextTick(() => {
-        this.$refs.MaterialArticleDetail.init(data)
+        this.$refs.MaterialArticleDetail.init(id)
       })
     },
     // 预览图片
@@ -560,21 +643,22 @@ export default {
       })
     },
     // 编辑文章
-    editArticleHandle(data) {
+    editArticleHandle(id) {
       this.$refs.ArticleAddOrUpdate.openDialog()
       this.$nextTick(() => {
-        this.$refs.ArticleAddOrUpdate.init(data)
+        this.$refs.ArticleAddOrUpdate.init(id)
       })
     },
     // 编辑图片
     editPictureHandle(data) {
-      this.$refs.MaterialEdit.openDialog()
+      this.$refs.MaterialPictureEdit.openDialog()
       this.$nextTick(() => {
-        this.$refs.MaterialEdit.init(data)
+        this.$refs.MaterialPictureEdit.init(data)
       })
     },
     // 获取视频/音频/文章/图片-列表
     getDataList(type = {}) {
+      this.dataListLoading = true
       getMaterialList(this.$service.adornData({
         'page': this.pageIndex,
         'size': this.pageSize,
@@ -608,17 +692,18 @@ export default {
           this.totalPage = 0
         }
       })
+      this.dataListLoading = false
     },
     // 每页数
     sizeChangeHandle(val) {
       this.pageSize = val
       this.pageIndex = 1
-      this.getDataList()
+      this.getDataList({ 'type': this.materialType })
     },
     // 当前页
     currentChangeHandle(val) {
       this.pageIndex = val
-      this.getDataList()
+      this.getDataList({ 'type': this.materialType })
     },
     // 多选
     selectionChangeHandle(val) {
@@ -626,13 +711,13 @@ export default {
     },
     // 删除
     deleteHandle(data) {
-      this.$confirm(`确定对[名称=${data.name}]进行[${data.name ? '删除' : '批量删除'}]操作?`, '提示', {
+      this.$confirm(`确定对[名称=${data.name}]进行[删除]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
         materialDelete(this.$service.adornData({
-          'material_ids	': [data.id]
+          'material_ids': [data.id]
         })).then((data) => {
           if (data && data.code === 0) {
             this.$message({
@@ -640,7 +725,7 @@ export default {
               type: 'success',
               duration: 1500,
               onClose: () => {
-                this.getDataList({ 'type': this.materialvideoType })
+                this.getDataList({ 'type': this.materialType })
               }
             })
           } else {

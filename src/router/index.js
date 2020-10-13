@@ -87,6 +87,12 @@ export const constantRoutes = [
       name: 'SysMenus',
       component: () => import('@/views/sys/menu'),
       meta: { title: '菜单管理', icon: 'list' }
+    },
+    {
+      path: 'sys-menus-link-background',
+      name: 'SysMenusLinkBackground',
+      component: () => import('@/views/sys/menu-relation-background-routing'),
+      meta: { title: '路由设置', icon: 'list' }
     }]
   },
   // {
@@ -119,81 +125,87 @@ export const constantRoutes = [
   //     name: 'AddOrUpdateCourse',
   //     hidden: true,
   //     component: () => import('@/views/course/management/add-or-update-course'),
-  //     meta: { title: '创建课程', icon: 'course-module' }
-  //   },
-  //   {
-  //     path: 'course-chapter',
-  //     name: 'ChapterManagement',
-  //     component: () => import('@/views/course/chapter/chapter-management'),
-  //     meta: { title: '章节管理', icon: 'course-package' },
-  //     children: []
-  //   },
-  //   {
-  //     path: 'add-or-update-chapter',
-  //     name: 'AddOrUpdateChapter',
-  //     hidden: true,
-  //     component: () => import('@/views/course/chapter/add-or-update-chapter'),
-  //     meta: { title: '创建章节', icon: 'course-package' }
-  //   },
-  //   {
-  //     path: 'content-management',
-  //     name: 'ContentManagement',
-  //     component: () => import('@/views/course/content/content-management'),
-  //     meta: { title: '内容管理', icon: 'course-package' },
-  //     children: []
-  //   },
-  //   {
-  //     path: 'create-or-update-video',
-  //     name: 'CreateOrUpdateVideo',
-  //     hidden: true,
-  //     component: () => import('@/views/course/content/content-add-or-update-video'),
-  //     meta: { title: '创建视频', icon: 'course-package', activeMenu: '/course/content-management' }
-  //   },
-  //   {
-  //     path: 'create-or-update-audio',
-  //     name: 'CreateOrUpdateAudio',
-  //     hidden: true,
-  //     component: () => import('@/views/course/content/content-add-or-update-audio'),
-  //     meta: { title: '创建音频', icon: 'course-package', activeMenu: '/course/content-management' }
-  //   },
-  //   {
-  //     path: 'create-or-update-article',
-  //     name: 'CreateOrUpdateArticle',
-  //     hidden: true,
-  //     component: () => import('@/views/course/content/content-add-or-update-article'),
-  //     meta: { title: '创建文章', icon: 'course-package', activeMenu: '/course/content-management' }
-  //   },
-  //   {
-  //     path: 'create-or-update-image',
-  //     name: 'CreateOrUpdateImage',
-  //     hidden: true,
-  //     component: () => import('@/views/course/content/content-add-or-update-image'),
-  //     meta: { title: '创建图片', icon: 'course-package', activeMenu: '/course/content-management' }
+  //     meta: { title: '创建课程', icon: 'course-module', activeMenu: '/course/course-management' }
+  //   }
+  //   // {
+  //   //   path: 'course-chapter',
+  //   //   name: 'ChapterManagement',
+  //   //   component: () => import('@/views/course/chapter/chapter-management'),
+  //   //   meta: { title: '章节管理', icon: 'course-package' },
+  //   //   children: []
+  //   // },
+  //   // {
+  //   //   path: 'add-or-update-chapter',
+  //   //   name: 'AddOrUpdateChapter',
+  //   //   hidden: true,
+  //   //   component: () => import('@/views/course/chapter/add-or-update-chapter'),
+  //   //   meta: { title: '创建章节', icon: 'course-package', activeMenu: '/course/course-chapter' }
+  //   // },
+  //   // {
+  //   //   path: 'content-management',
+  //   //   name: 'ContentManagement',
+  //   //   component: () => import('@/views/course/content/content-management'),
+  //   //   meta: { title: '内容管理', icon: 'course-package' },
+  //   //   children: []
+  //   // },
+  //   // {
+  //   //   path: 'create-or-update-video',
+  //   //   name: 'CreateOrUpdateVideo',
+  //   //   hidden: true,
+  //   //   component: () => import('@/views/course/content/content-add-or-update-video'),
+  //   //   meta: { title: '创建视频', icon: 'course-package', activeMenu: '/course/content-management' }
+  //   // },
+  //   // {
+  //   //   path: 'create-or-update-audio',
+  //   //   name: 'CreateOrUpdateAudio',
+  //   //   hidden: true,
+  //   //   component: () => import('@/views/course/content/content-add-or-update-audio'),
+  //   //   meta: { title: '创建音频', icon: 'course-package', activeMenu: '/course/content-management' }
+  //   // },
+  //   // {
+  //   //   path: 'create-or-update-article',
+  //   //   name: 'CreateOrUpdateArticle',
+  //   //   hidden: true,
+  //   //   component: () => import('@/views/course/content/content-add-or-update-article'),
+  //   //   meta: { title: '创建文章', icon: 'course-package', activeMenu: '/course/content-management' }
+  //   // },
+  //   // {
+  //   //   path: 'create-or-update-image',
+  //   //   name: 'CreateOrUpdateImage',
+  //   //   hidden: true,
+  //   //   component: () => import('@/views/course/content/content-add-or-update-image'),
+  //   //   meta: { title: '创建图片', icon: 'course-package', activeMenu: '/course/content-management' }
+  //   // }
+  //   ]
+  // },
+  // {
+  //   path: '/order',
+  //   component: Layout,
+  //   redirect: '/order/order-management',
+  //   meta: { title: '订单管理', icon: 'basic' },
+  //   children: [{
+  //     path: 'order-management',
+  //     name: 'OrderManagement',
+  //     component: () => import('@/views/order/order-management'),
+  //     meta: { title: '订单管理', icon: 'order' }
   //   }]
   // },
   // {
   //   path: '/basic',
   //   component: Layout,
-  //   redirect: '/basic/management/page-management',
+  //   redirect: '/basic/material-management',
   //   meta: { title: '基础管理', icon: 'basic' },
   //   children: [{
-  //     path: 'management',
-  //     name: 'management',
-  //     redirect: '/basic/management/page-management',
-  //     component: () => import('@/views/basic/management'),
-  //     meta: { title: '页面管理', icon: 'basic' },
-  //     children: [{
-  //       path: 'page-management',
-  //       name: 'PageManagement',
-  //       component: () => import('@/views/basic/management/page-management'),
-  //       meta: { title: '页面管理', icon: 'basic' }
-  //     },
-  //     {
-  //       path: 'build-page',
-  //       name: 'BuildPage',
-  //       component: () => import('@/views/basic/management/build-page'),
-  //       meta: { title: '搭建页面', icon: 'basic' }
-  //     }]
+  //     path: 'page-management',
+  //     name: 'PageManagement',
+  //     component: () => import('@/views/basic/management/page-management'),
+  //     meta: { title: '页面管理', icon: 'basic' }
+  //   },
+  //   {
+  //     path: 'label',
+  //     name: 'Label',
+  //     component: () => import('@/views/sys/tag'),
+  //     meta: { title: '标签管理', icon: 'list' }
   //   },
   //   {
   //     path: 'material-management',

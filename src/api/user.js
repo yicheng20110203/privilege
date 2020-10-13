@@ -52,3 +52,15 @@ export function logout() {
     url: 'privilege/user/logout'
   })
 }
+
+/**
+ * 后台 - 用户管理
+ * @param {*} data
+ */
+export function adminList(data) {
+  return service.request({
+    method: 'post',
+    url: 'user/admin/list',
+    data
+  })
+}

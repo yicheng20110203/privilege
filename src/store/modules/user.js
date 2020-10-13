@@ -1,6 +1,6 @@
 import { logout, getInfo } from '@/api/user'
 import { Login } from '@/api/login'
-import { getToken, setToken, removeToken, getUserId, setUserId, removeUserId, setOs, getOs, removeOs, getLoginName, setLoginName, removeLoginName, getMenuList, setMenuList, removeMenuList } from '@/utils/auth'
+import { getToken, setToken, removeToken, getUserId, removeUserId, getOs, removeOs, getLoginName, setLoginName, removeLoginName, getMenuList, setMenuList, removeMenuList } from '@/utils/auth'
 import { resetRouter } from '@/router'
 
 const getDefaultState = () => {
@@ -61,14 +61,13 @@ const actions = {
       Login(data).then(response => {
         const userdata = response.data
         commit('SET_TOKEN', userdata.authorization)
-        commit('SET_USERID', userdata.id)
-        commit('SET_OS', userdata.os)
+        // commit('SET_USERID', userdata.id)
         commit('SET_LOGINNAME', userdata.user_info.login_name)
         commit('SET_MENULIST', userdata.menus)
-        commit('SET_ISLOGIN', true)
+        // commit('SET_ISLOGIN', true)
         setToken(userdata.authorization)
-        setUserId(userdata.id)
-        setOs(userdata.os)
+        // setUserId(userdata.id)
+        // setOs(userdata.os)
         setLoginName(userdata.user_info.login_name)
         setMenuList(userdata.menus)
         resolve()
@@ -101,7 +100,6 @@ const actions = {
       logout().then(() => {
         removeToken() // must remove  token  first
         removeUserId()
-        removeOs()
         removeLoginName()
         resetRouter()
         removeMenuList()

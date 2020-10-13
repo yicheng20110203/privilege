@@ -91,7 +91,7 @@ export function chapterSectionCanSelect(data) {
 export function chapterSetOrder(data) {
   return service.request({
     method: 'post',
-    url: 'lesson/admin/lesson/chapter/set/order',
+    url: 'lesson/admin/chapter/set/order/try_reading',
     data
   })
 }

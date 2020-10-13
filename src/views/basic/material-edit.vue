@@ -4,6 +4,7 @@
     :close-on-click-modal="false"
     :visible.sync="visible"
     width="30%"
+    @closed="closedDialog"
   >
     <el-form ref="dataForm" :model="dataForm" size="medium" label-suffix=":">
       <el-form-item v-if="submitType===1" label="视频名称" prop="name">
@@ -25,9 +26,11 @@
         <el-cascader
           v-model="dataForm.classify"
           :options="menuCategory"
+          :show-all-levels="false"
           :props="{ checkStrictly: true, value: 'key', label: 'val' }"
           placeholder="请选择分类"
           clearable
+          @change="handleChange"
         />
       </el-form-item>
       <el-form-item>
@@ -58,7 +61,7 @@ export default {
       dataForm: {
         id: '', // 素材id
         name: '', // 名称
-        classify: '' // 分类
+        classify: [] // 分类
       }
     }
   },
@@ -76,15 +79,32 @@ export default {
     // 取消
     cancelHandle() {
       this.visible = false
-      this.dataForm.classify = ''
+    },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+    },
+    // 选择
+    handleChange(value) {
+      this.dataForm.classify = value[value.length - 1]
     },
     // 确定
     dataFormSubmit() {
+      console.log('素材编辑', this.$service.adornData({
+        'id': this.dataForm.id,
+        'name': this.dataForm.name,
+        'type': this.submitType,
+        'category_key': this.dataForm.classify
+      }))
       materialUpdate(this.$service.adornData({
         'id': this.dataForm.id,
         'name': this.dataForm.name,
         'type': this.submitType,
-        'category_key': this.dataForm.classify[0]
+        'category_key': this.dataForm.classify
       })).then(res => {
         if (res && res.code === 0) {
           this.$message({

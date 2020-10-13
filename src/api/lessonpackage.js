@@ -73,13 +73,13 @@ export function lessonPackageSelect(data) {
 }
 
 /**
- * 课包管理 - 设置课包内容 - 排序/可试看
+ * 课包管理 - 设置课程排序
  * @param {*} data
  */
-export function lessonPackageSetOrder(data) {
+export function packageUpdateLessonOrder(data) {
   return service.request({
     method: 'post',
-    url: 'lesson/admin/package/lesson/set/order',
+    url: 'lesson/admin/package/update/lesson/order',
     data
   })
 }

@@ -1,12 +1,22 @@
 import service from '@/utils/request'
 
 /**
- * 获取用户菜单
+ * 列表 - 授权菜单树状结构
  */
 export function getMenus() {
   return service.request({
     method: 'post',
     url: 'privilege/menu/list/tree/auth'
+  })
+}
+
+/**
+ * 列表 - 所有菜单树状结构
+ */
+export function getMenusAll() {
+  return service.request({
+    method: 'post',
+    url: 'privilege/menu/list/tree/all'
   })
 }
 

@@ -11,3 +11,15 @@ export function getCourseFilters(data) {
     data
   })
 }
+
+/**
+ * 筛选项-用户
+ * @param {*} data
+ */
+export function getUserFilters(data) {
+  return service.request({
+    method: 'post',
+    url: 'user/admin/filter',
+    data
+  })
+}

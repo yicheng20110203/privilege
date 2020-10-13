@@ -2,7 +2,7 @@
   <div class="dashboard-container">
     <el-form :inline="true" :model="dataForm">
       <el-form-item>
-        <el-button type="primary" @click="addOrUpdateHandle()">新增一级菜单</el-button>
+        <el-button type="primary" @click="addParentHandle">新增一级菜单</el-button>
       </el-form-item>
     </el-form>
 
@@ -63,18 +63,22 @@
         label="操作"
       >
         <template slot-scope="scope">
-          <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id)">修改</el-button>
+          <el-button type="text" size="small" @click="addHandle(scope.row)">新增</el-button>
+          <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row)">修改</el-button>
           <el-button type="text" size="small" @click="deleteHandle(scope.row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <!-- 弹窗, 新增 / 修改 -->
-    <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList" />
+    <add-or-update
+      ref="addOrUpdate"
+      @refreshDataList="getDataList"
+    />
   </div>
 </template>
 
 <script>
-import { getMenus } from '@/api/menus'
+import { getMenusAll, menuDelete } from '@/api/menus'
 import AddOrUpdate from './menu-add-or-update'
 export default {
   name: 'SysMenus',
@@ -96,16 +100,27 @@ export default {
     // 获取数据列表
     getDataList() {
       this.dataListLoading = true
-      getMenus().then(response => {
+      getMenusAll().then(response => {
         this.dataList = response.data.items
         this.dataListLoading = false
       })
     },
+    // 新增根菜单
+    addParentHandle() {
+      this.$refs.addOrUpdate.openDialog()
+    },
     // 新增 / 修改
-    addOrUpdateHandle(id) {
-      this.addOrUpdateVisible = true
+    addOrUpdateHandle(data) {
+      this.$refs.addOrUpdate.openDialog()
       this.$nextTick(() => {
-        this.$refs.addOrUpdate.init(id)
+        this.$refs.addOrUpdate.init(data)
+      })
+    },
+    // 新增子菜单
+    addHandle(data) {
+      this.$refs.addOrUpdate.openDialog()
+      this.$nextTick(() => {
+        this.$refs.addOrUpdate.Submenu(data)
       })
     },
     // 删除
@@ -115,14 +130,12 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$http({
-          url: this.$http.adornUrl(`/sys/menu/delete/${id}`),
-          method: 'post',
-          data: this.$http.adornData()
-        }).then(({ data }) => {
+        menuDelete(this.$service.adornData({
+          'id': id
+        })).then(({ data }) => {
           if (data && data.code === 0) {
             this.$message({
-              message: '操作成功',
+              message: '添加成功',
               type: 'success',
               duration: 1500,
               onClose: () => {

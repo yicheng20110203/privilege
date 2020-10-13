@@ -14,11 +14,6 @@
               <el-option v-for="item in dataForm.statuslist" :key="item.key" :label="item.val" :value="item.key" />
             </el-select>
           </el-form-item>
-          <el-form-item label="类型" prop="chapter_type">
-            <el-select v-model="dataForm.chapter_type" label="请选择">
-              <el-option v-for="item in dataForm.chapterTypeList" :key="item.key" :label="item.val" :value="item.key" />
-            </el-select>
-          </el-form-item>
           <el-form-item label="标签" prop="tag">
             <el-select v-model="dataForm.tag" label="请选择">
               <el-option v-for="item in dataForm.tags" :key="item.key" :label="item.val" :value="item.key" />
@@ -68,6 +63,7 @@
           :default-props="defaultProps"
           :category-type="materialCategoryType"
           @nodeClick="switchCategory"
+          @refreshCategoryDataList="getCategoryList"
         />
       </el-aside>
 
@@ -76,7 +72,7 @@
           <el-table-column type="selection" header-align="center" align="center" width="50" />
           <el-table-column prop="code" label="编号" header-align="center" align="center" />
           <el-table-column prop="name" label="章节名称" header-align="center" align="center" />
-          <el-table-column prop="section_nums" label="关联小节" header-align="center" align="center" />
+          <el-table-column prop="section_nums" label="内容数量" header-align="center" align="center" />
           <el-table-column prop="desc" label="备注" header-align="center" align="center" />
           <el-table-column prop="status_desc" label="状态" header-align="center" align="center" />
           <el-table-column prop="create_time_desc" label="创建时间" header-align="center" align="center" />
@@ -114,7 +110,7 @@
     <category-add
       ref="categoryAdd"
       :category-type="materialCategoryType"
-      @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
+      @refreshCategoryDataList="getCategoryList"
     />
   </div>
 </template>
@@ -161,12 +157,13 @@ export default {
       pageSize: 10,
       totalPage: 0,
       chapter_id: '', // 章节id
-      chapterDataList: []
+      chapterDataList: [],
+      onlyKey: 1
     }
   },
   created() {
     // 获取章节分类
-    this.getCategoryList({ 'types': this.menuSelect })
+    this.getCategoryList()
     // 获取章节列表
     this.getDataList()
     // 获取章节标签
@@ -174,9 +171,9 @@ export default {
   },
   methods: {
     // 获取分类
-    getCategoryList(types = {}) {
+    getCategoryList() {
       getCategoryListTree(this.$service.adornData({
-        ...types
+        'types': this.menuSelect
       })).then(res => {
         if (res && res.code === 0) {
           this.categoryList = res.data.list
@@ -204,7 +201,6 @@ export default {
         'name': this.dataForm.name,
         'status': this.dataForm.status,
         'tag_key': this.dataForm.tag,
-        'chapter_type': this.dataForm.chapter_type,
         'min_create_time': !this.dataForm.date1 ? 0 : this.dataForm.date1 / 1000,
         'max_create_time': !this.dataForm.date2 ? 0 : this.dataForm.date2 / 1000,
         ...type
@@ -267,7 +263,7 @@ export default {
     onlineChapter(chapterid) {
       this.chapter_id	 = chapterid
       chapterOnline(this.$service.adornData({
-        'chapter_id	': this.chapter_id
+        'chapter_id': this.chapter_id
       })).then(response => {
         if (response && response.code === 0) {
           this.$message({
@@ -287,7 +283,7 @@ export default {
     offlineChapter(chapterid) {
       this.chapter_id	 = chapterid
       chapterOffline(this.$service.adornData({
-        'chapter_id	': this.chapter_id
+        'chapter_id': this.chapter_id
       })).then(response => {
         if (response && response.code === 0) {
           this.$message({
@@ -305,7 +301,7 @@ export default {
     },
     // 删除
     deleteHandle(data) {
-      this.$confirm(`确定对[名称=${data.name}]进行[${data.name ? '删除' : '批量删除'}]操作?`, '提示', {
+      this.$confirm(`确定对[名称=${data.name}]进行[删除]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'

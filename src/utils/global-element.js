@@ -56,6 +56,11 @@ export const FREE = 1 // 免费
 export const NOT_FREE = 2 // 不免费
 
 /**
+ * 用户标签
+ */
+export const is_show = true
+
+/**
  * 价格标识
  */
 export const NEWCOMER_EXCLUSIVE = 1 // 新人专享

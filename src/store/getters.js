@@ -5,6 +5,7 @@ const getters = {
   authorization: state => state.user.authorization,
   avatar: state => state.user.avatar,
   name: state => state.user.name,
+  material_active_name: state => state.tab.material_active_name,
   userid: state => state.user.userid,
   os: state => state.user.os,
   login_name: state => state.user.login_name,

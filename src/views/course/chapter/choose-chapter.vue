@@ -5,25 +5,21 @@
     :visible.sync="visible"
     width="60%"
     center
+    @closed="closedDialog"
   >
     <el-form ref="dataForm" :inline="true" :model="dataForm" @keyup.enter.native="getDataList">
       <el-form-item label="编号" prop="code">
-        <el-input v-model="dataForm.code" prefix-icon="el-icon-search" placeholder="请输入小节编号" clearable />
+        <el-input v-model="dataForm.code" prefix-icon="el-icon-search" placeholder="请输入内容编号" clearable />
       </el-form-item>
       <el-form-item label="名称" prop="name">
-        <el-input v-model="dataForm.name" prefix-icon="el-icon-search" label="名称" placeholder="请输入小节名称" clearable />
+        <el-input v-model="dataForm.name" prefix-icon="el-icon-search" label="名称" placeholder="请输入内容名称" clearable />
       </el-form-item>
       <el-form-item label="类型" prop="type">
-        <el-select
-          v-model="dataForm.type"
-          placeholder="请选择内容类型"
-          clearable
-          :change="selectChangeHandle"
-        >
+        <el-select v-model="dataForm.type" placeholder="请选择内容类型" clearable>
           <el-option v-for="item in materialTypeList" :key="item.key" :label="item.val" :value="item.key" />
         </el-select>
       </el-form-item>
-      <el-form-item label="分类" prop="category">
+      <!-- <el-form-item label="分类" prop="category">
         <el-select
           v-model="dataForm.category"
           clearable
@@ -31,9 +27,10 @@
         >
           <el-option v-for="item in categoryList" :key="item.key" :label="item.val" :value="item.key" />
         </el-select>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item>
         <el-button type="primary" @click="getDataList">查询</el-button>
+        <el-button type="primary" @click="resetForm('dataForm')">重置</el-button>
       </el-form-item>
     </el-form>
     <el-table
@@ -101,15 +98,9 @@ export default {
         code: '', // 编号
         name: '', // 名称
         category: '', // 选中分类
-        type: '' // 类型标签
+        type: 0 // 类型标签
       }
     }
-  },
-  created() {
-    // 获取-素材-类型
-    this.getMaterialTypes()
-    // 查询 - 默认加载所有列表
-    this.getDataList()
   },
   methods: {
     // 显示
@@ -130,6 +121,15 @@ export default {
     // 多选
     selectionChangeHandle(val) {
       this.dataListSelections = val
+    },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+      this.getDataList()
     },
     // 获取-素材-类型
     getMaterialTypes() {
@@ -154,9 +154,8 @@ export default {
         'size': this.pageSize,
         'chapter_id': this.chapterId,
         'code': this.dataForm.code,
-        'name': this.dataForm.name
-        // 'material_type': this.dataForm.category,
-        // 'tag_key': this.dataForm.type
+        'name': this.dataForm.name,
+        'material_type': this.dataForm.type
       })).then(res => {
         this.dataList = res && res.code === 0 ? res.data.list : []
         this.totalPage = res && res.code === 0 ? res.data.total_size : []

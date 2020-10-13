@@ -8,6 +8,7 @@ const TokenKey = 'ceibsdigital_token'
 const UserIdKey = 'id'
 const OsKey = 'h5'
 const LoginNamekey = 'login_name'
+const ImgToken = 'photo'
 /**
  * 存储菜单列表和权限
  */
@@ -84,4 +85,16 @@ export function getPermissions() {
 
 export function removePermissions() {
   return localStorage.removeItem(permissions)
+}
+
+export function setImgToken(value) {
+  return Cookies.set(ImgToken, value)
+}
+
+export function getImgToken() {
+  return Cookies.get(ImgToken)
+}
+
+export function removeImgToken() {
+  return Cookies.remove(ImgToken)
 }

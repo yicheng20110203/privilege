@@ -9,36 +9,36 @@
           <el-form-item label="昵称" prop="nickname">
             <el-input v-model="dataForm.nickname" prefix-icon="el-icon-search" placeholder="昵称" clearable />
           </el-form-item>
-          <el-form-item label="用户标签" prop="user_tag">
-            <el-select v-model="dataForm.user_tag_list" clearable placeholder="请输入用户标签">
+          <el-form-item label="用户标签" prop="user_tag_list">
+            <el-select v-model="dataForm.user_tag_list" clearable placeholder="选择用户标签">
               <el-option
                 v-for="item in dataForm.user_tag"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
+                :key="item.key"
+                :label="item.val"
+                :value="item.key"
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="来源渠道" prop="source_channel">
-            <el-select v-model="dataForm.source_channel_list" clearable placeholder="请输入来源渠道">
+          <el-form-item label="来源渠道" prop="source_channel_list">
+            <el-select v-model="dataForm.source_channel_list" clearable placeholder="选择来源渠道">
               <el-option
                 v-for="item in dataForm.source_channel"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
+                :key="item.key"
+                :label="item.val"
+                :value="item.key"
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="用户身份" prop="user_id">
-            <el-select v-model="dataForm.user_id_list" clearable placeholder="请输入用户身份">
+          <!-- <el-form-item label="用户身份" prop="user_id_list">
+            <el-select v-model="dataForm.user_id_list" clearable placeholder="选择用户身份">
               <el-option
                 v-for="item in dataForm.user_id"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
+                :key="item.key"
+                :label="item.val"
+                :value="item.key"
               />
             </el-select>
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item label="注册时间" prop="date1">
             <el-date-picker
               v-model="dataForm.date1"
@@ -62,18 +62,12 @@
     </el-collapse>
     <el-table v-loading="dataListLoading" :data="dataList" border height="450" style="width:100%">
       <el-table-column type="selection" header-align="center" align="center" width="50" />
-      <el-table-column prop="code" label="昵称" header-align="center" align="center" />
-      <el-table-column prop="code" label="手机号" header-align="center" align="center" />
-      <el-table-column prop="code" label="用户身份" header-align="center" align="center" />
-      <el-table-column prop="code" label="来源渠道" header-align="center" align="center" />
-      <el-table-column prop="code" label="购买次数" header-align="center" align="center" />
-      <el-table-column prop="code" label="消费总额" header-align="center" align="center" />
-      <el-table-column prop="code" label="注册时间" header-align="center" align="center" />
-      <el-table-column label="操作" fixed="right" header-align="center" align="center">
-        <template>
-          <el-button type="text">查看</el-button>
-        </template>
-      </el-table-column>
+      <el-table-column prop="id" label="用户ID" header-align="center" align="center" />
+      <el-table-column prop="nickname" label="昵称" header-align="center" align="center" />
+      <el-table-column prop="mobile" label="手机号" header-align="center" align="center" />
+      <!-- <el-table-column prop="vip_type_desc" label="用户身份" header-align="center" align="center" /> -->
+      <el-table-column prop="reg_channel_desc" label="来源渠道" header-align="center" align="center" />
+      <el-table-column prop="create_time_desc" label="注册时间" header-align="center" align="center" />
     </el-table>
     <el-pagination
       :current-page="pageIndex"
@@ -89,13 +83,16 @@
 </template>
 
 <script>
-
+import { adminList } from '@/api/user'
+import { getUserFilters } from '@/api/courseselection'
+import { is_show } from '@/utils/global-element'
 export default {
   name: 'UserList',
   data() {
     return {
       activeNames: ['1'],
       dataListLoading: false,
+      userLabel: [], // 用户标签
       dataList: [], // 用户列表
       pageIndex: 1,
       pageSize: 10,
@@ -114,10 +111,17 @@ export default {
       }
     }
   },
+  created() {
+    // 获取用户标签
+    this.getUserLabel()
+    // 获取用户列表
+    this.getDataList()
+  },
   methods: {
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.getDataList()
     },
     // 每页数
     sizeChangeHandle(val) {
@@ -134,9 +138,36 @@ export default {
     selectionChangeHandle(val) {
       this.dataListSelections = val
     },
+    // 获取 - 用户 - 标签/渠道/用户身份
+    getUserLabel() {
+      getUserFilters(this.$service.adornData({
+        'show_user_tag': is_show,
+        'show_user_channel': is_show,
+        'show_user_identifier': is_show
+      })).then(res => {
+        this.dataForm.user_tag = res && res.code === 0 ? res.data.user_tag : []
+        this.dataForm.source_channel = res && res.code === 0 ? res.data.user_channel : []
+        this.dataForm.user_id = res && res.code === 0 ? res.data.UserIdentifier : []
+      })
+    },
     // 查询
     getDataList() {
-
+      this.dataListLoading = true
+      adminList(this.$service.adornData({
+        'page': this.pageIndex,
+        'size': this.pageSize,
+        'mobile': this.dataForm.tel.trim(),
+        'nickname': this.dataForm.nickname.trim(),
+        'tag_key': this.dataForm.user_tag_list.trim(),
+        'channel_id': !this.dataForm.source_channel_list ? 0 : this.dataForm.source_channel_list,
+        // 'user_vip_type': !this.dataForm.user_id_list ? 0 : this.dataForm.user_id_list,
+        'min_create_time': !this.dataForm.date1 ? 0 : this.dataForm.date1 / 1000,
+        'max_create_time': !this.dataForm.date2 ? 0 : this.dataForm.date2 / 1000
+      })).then(res => {
+        this.dataList = res && res.code === 0 ? res.data.list : []
+        this.totalPage = res && res.code === 0 ? res.data.total_size : []
+      })
+      this.dataListLoading = false
     }
   }
 }

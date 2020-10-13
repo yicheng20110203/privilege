@@ -71,4 +71,17 @@ const dateFilter = (input, format = 0) => {
   }
 }
 
-export { dateServer, moneyFilter, dateFilter, genderFilter, vipPriceFilter, priceFilter, fileSizeFilter }
+const tokenFilter = (value) => {
+  return encodeURIComponent(value)
+}
+
+export {
+  dateServer,
+  moneyFilter,
+  dateFilter,
+  genderFilter,
+  vipPriceFilter,
+  priceFilter,
+  fileSizeFilter,
+  tokenFilter
+}

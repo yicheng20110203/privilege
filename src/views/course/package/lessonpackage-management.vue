@@ -174,13 +174,16 @@ export default {
     // 重置表单
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.getDataList()
     },
     // 创建
     addLessonPackage() {
+      sessionStorage.setItem('package', 0)
       this.$router.push({ path: '/course/add-or-update-lessonpackage' })
     },
     // 编辑
     editLessonPackage(data) {
+      sessionStorage.setItem('package', 0)
       this.$router.push({ path: '/course/add-or-update-lessonpackage', query: { packageid: data.id }})
     },
     // 上架

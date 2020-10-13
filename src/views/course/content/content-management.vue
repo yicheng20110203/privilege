@@ -8,21 +8,16 @@
               <el-form-item label="名称:" prop="name">
                 <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入视频名称" clearable />
               </el-form-item>
-              <el-form-item label="类型:" prop="content_type">
-                <el-select v-model="dataForm.content_type" label="请选择">
-                  <el-option v-for="item in dataForm.contentTypeList" :key="item.key" :label="item.val" :value="item.key" />
-                </el-select>
-              </el-form-item>
               <el-form-item label="状态:" prop="status">
                 <el-select v-model="dataForm.status" label="请选择">
                   <el-option v-for="item in dataForm.statuslist" :key="item.key" :label="item.val" :value="item.key" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="标签:" prop="tag">
+              <!-- <el-form-item label="标签:" prop="tag">
                 <el-select v-model="dataForm.tag" label="请选择">
                   <el-option v-for="item in dataForm.tags" :key="item.key" :label="item.val" :value="item.key" />
                 </el-select>
-              </el-form-item>
+              </el-form-item> -->
               <el-form-item label="创建时间:" prop="date1">
                 <el-date-picker
                   v-model="dataForm.date1"
@@ -62,12 +57,14 @@
                 />
               </div>
             </div>
-            <tissue-tree
+            <category-tree
               v-if="videoCategoryList.length"
+              ref="CategoryTree"
               :data-tree="videoCategoryList"
               :default-props="defaultProps"
               :category-type="materialCategoryType"
               @nodeClick="switchCategory"
+              @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
             />
           </el-aside>
           <el-main>
@@ -134,21 +131,16 @@
               <el-form-item label="名称:" prop="name">
                 <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入音频名称" clearable />
               </el-form-item>
-              <el-form-item label="类型:" prop="content_type">
-                <el-select v-model="dataForm.content_type" label="请选择">
-                  <el-option v-for="item in dataForm.contentTypeList" :key="item.key" :label="item.val" :value="item.key" />
-                </el-select>
-              </el-form-item>
               <el-form-item label="状态:" prop="status">
                 <el-select v-model="dataForm.status" label="请选择">
                   <el-option v-for="item in dataForm.statuslist" :key="item.key" :label="item.val" :value="item.key" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="标签:" prop="tag">
+              <!-- <el-form-item label="标签:" prop="tag">
                 <el-select v-model="dataForm.tag" label="请选择">
                   <el-option v-for="item in dataForm.tags" :key="item.key" :label="item.val" :value="item.key" />
                 </el-select>
-              </el-form-item>
+              </el-form-item> -->
               <el-form-item label="创建时间:" prop="date1">
                 <el-date-picker
                   v-model="dataForm.date1"
@@ -188,12 +180,14 @@
                 />
               </div>
             </div>
-            <tissue-tree
+            <category-tree
               v-if="audioCategoryList.length"
+              ref="CategoryTree"
               :data-tree="audioCategoryList"
               :default-props="defaultProps"
               :category-type="materialCategoryType"
               @nodeClick="switchCategory"
+              @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
             />
           </el-aside>
           <el-main>
@@ -260,21 +254,16 @@
               <el-form-item label="名称:" prop="name">
                 <el-input v-model="dataForm.name" prefix-icon="el-icon-search" placeholder="请输入文章名称" clearable />
               </el-form-item>
-              <el-form-item label="类型:" prop="content_type">
-                <el-select v-model="dataForm.content_type" label="请选择">
-                  <el-option v-for="item in dataForm.contentTypeList" :key="item.key" :label="item.val" :value="item.key" />
-                </el-select>
-              </el-form-item>
               <el-form-item label="状态:" prop="status">
                 <el-select v-model="dataForm.status" label="请选择">
                   <el-option v-for="item in dataForm.statuslist" :key="item.key" :label="item.val" :value="item.key" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="标签:" prop="tag">
+              <!-- <el-form-item label="标签:" prop="tag">
                 <el-select v-model="dataForm.tag" label="请选择">
                   <el-option v-for="item in dataForm.tags" :key="item.key" :label="item.val" :value="item.key" />
                 </el-select>
-              </el-form-item>
+              </el-form-item> -->
               <el-form-item label="创建时间:" prop="date1">
                 <el-date-picker
                   v-model="dataForm.date1"
@@ -314,12 +303,14 @@
                 />
               </div>
             </div>
-            <tissue-tree
+            <category-tree
               v-if="articleCategoryList.length"
+              ref="CategoryTree"
               :data-tree="articleCategoryList"
               :default-props="defaultProps"
               :category-type="materialCategoryType"
               @nodeClick="switchCategory"
+              @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
             />
           </el-aside>
           <el-main>
@@ -389,7 +380,7 @@
 </template>
 
 <script>
-import tissueTree from '@/components/Tree/index'
+import CategoryTree from '@/components/Tree/index'
 import categoryAdd from '@/components/CategoryAdd/index'
 import { getContentList, contentDelete, contentOnline, contentOffline } from '@/api/content'
 import { getCourseFilters } from '@/api/courseselection'
@@ -397,7 +388,7 @@ import { getCategoryListTree } from '@/api/categorytree'
 export default {
   name: 'ContentManagement',
   components: {
-    tissueTree,
+    CategoryTree,
     categoryAdd
   },
   data() {
@@ -416,8 +407,8 @@ export default {
       articleCategoryList: [], // 文章-菜单-列表
       pictureCategoryList: [], // 图片-菜单-列表
       materialType: 1, // 内容-类型 默认视频
-      menuSelect: [], // 添加分类，回调刷新菜单
-      materialCategoryType: 6, // 根据tab-添加-分类
+      menuSelect: [10], // 添加分类，回调刷新菜单
+      materialCategoryType: 10, // 根据tab-添加-分类
       materialvideoType: 1, // 内容-视频-类型
       materialaudioType: 2, // 内容-音频-类型
       materialarticleType: 3, // 内容-文章-类型
@@ -454,10 +445,65 @@ export default {
     }
   },
   created() {
-    // 获取分类方法
-    this.getCategoryList({ 'types': this.videoCategoryType })
-    // 获取内容列表
-    this.getDataList({ 'type': this.materialvideoType })
+    // 创新更新返回
+    if (this.$route.query.activeName != null) {
+      this.activeName = this.$route.query.activeName
+      switch (this.activeName) {
+        case 'video':
+          this.materialType = this.materialvideoType
+          this.getDataList({ 'type': this.materialvideoType })
+          this.menuSelect = this.videoCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.videoCategoryType })
+          this.materialCategoryType = this.videoCategoryAdd // 添加和编辑分类
+          break
+        case 'audio':
+          this.materialType = this.materialaudioType
+          this.getDataList({ 'type': this.materialaudioType })
+          this.menuSelect = this.audioCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.audioCategoryType })
+          this.materialCategoryType = this.audioCategoryAdd // 添加和编辑分类
+          break
+        case 'article':
+          this.materialType = this.materialarticleType
+          this.getDataList({ 'type': this.materialarticleType })
+          this.menuSelect = this.articleCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.articleCategoryType })
+          this.materialCategoryType = this.articleCategoryAdd // 添加和编辑分类
+          break
+      }
+    }
+    // 页面刷新
+    if (sessionStorage.getItem('content_name') != null) {
+      this.activeName = sessionStorage.getItem('content_name')
+      switch (this.activeName) {
+        case 'video':
+          this.materialType = this.materialvideoType
+          this.getDataList({ 'type': this.materialvideoType })
+          this.menuSelect = this.videoCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.videoCategoryType })
+          this.materialCategoryType = this.videoCategoryAdd // 添加和编辑分类
+          break
+        case 'audio':
+          this.materialType = this.materialaudioType
+          this.getDataList({ 'type': this.materialaudioType })
+          this.menuSelect = this.audioCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.audioCategoryType })
+          this.materialCategoryType = this.audioCategoryAdd // 添加和编辑分类
+          break
+        case 'article':
+          this.materialType = this.materialarticleType
+          this.getDataList({ 'type': this.materialarticleType })
+          this.menuSelect = this.articleCategoryType // 分类树形菜单
+          this.getCategoryList({ 'types': this.articleCategoryType })
+          this.materialCategoryType = this.articleCategoryAdd // 添加和编辑分类
+          break
+      }
+    } else {
+      // 获取分类方法
+      this.getCategoryList({ 'types': this.videoCategoryType })
+      // 获取内容列表
+      this.getDataList({ 'type': this.materialvideoType })
+    }
     this.getStatusTag()
   },
   methods: {
@@ -465,28 +511,35 @@ export default {
     handleClick(tab, event) {
       switch (tab.name) {
         case 'video':
+          sessionStorage.setItem('content_name', 'video')
           this.materialType = this.materialvideoType
           this.getDataList({ 'type': this.materialvideoType })
           this.menuSelect = this.videoCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.videoCategoryType })
+          this.materialCategoryType = this.videoCategoryAdd // 添加和编辑分类
           break
         case 'audio':
+          sessionStorage.setItem('content_name', 'audio')
           this.materialType = this.materialaudioType
           this.getDataList({ 'type': this.materialaudioType })
           this.menuSelect = this.audioCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.audioCategoryType })
+          this.materialCategoryType = this.audioCategoryAdd // 添加和编辑分类
           break
         case 'article':
+          sessionStorage.setItem('content_name', 'article')
           this.materialType = this.materialarticleType
           this.getDataList({ 'type': this.materialarticleType })
           this.menuSelect = this.articleCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.articleCategoryType })
+          this.materialCategoryType = this.articleCategoryAdd // 添加和编辑分类
           break
         case 'image':
           this.materialType = this.materialpictureType
           this.getDataList({ 'type': this.materialpictureType })
           this.menuSelect = this.pictureCategoryType // 分类树形菜单
           this.getCategoryList({ 'types': this.pictureCategoryType })
+          this.materialCategoryType = this.pictureCategoryAdd // 添加和编辑分类
           break
       }
     },
@@ -543,21 +596,6 @@ export default {
     },
     // 添加分类
     categoryAddHandle() {
-      // 根据tab,修改添加分类
-      switch (this.activeName) {
-        case 'video':
-          this.materialCategoryType = this.videoCategoryAdd
-          break
-        case 'audio':
-          this.materialCategoryType = this.audioCategoryAdd
-          break
-        case 'article':
-          this.materialCategoryType = this.articleCategoryAdd
-          break
-        case 'image':
-          this.materialCategoryType = this.pictureCategoryAdd
-          break
-      }
       // 调用组件方法,打开组件
       this.$refs.categoryAdd.openDialog()
     },
@@ -569,7 +607,6 @@ export default {
         'name': this.dataForm.name,
         'status': this.dataForm.status,
         'tag_key': this.dataForm.tag,
-        'type': this.dataForm.content_type,
         'category_key': this.categorykey,
         'min_create_time': !this.dataForm.date1 ? 0 : this.dataForm.date1 / 1000,
         'max_create_time': !this.dataForm.date2 ? 0 : this.dataForm.date2 / 1000,
@@ -625,12 +662,12 @@ export default {
     sizeChangeHandle(val) {
       this.pageSize = val
       this.pageIndex = 1
-      this.getDataList()
+      this.getDataList({ 'type': this.materialType })
     },
     // 当前页
     currentChangeHandle(val) {
       this.pageIndex = val
-      this.getDataList()
+      this.getDataList({ 'type': this.materialType })
     },
     // 多选
     selectionChangeHandle(val) {
@@ -639,6 +676,7 @@ export default {
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.getDataList({ 'type': this.materialType })
     },
     // 创建视频
     addVideoHandle() {
@@ -683,7 +721,7 @@ export default {
             type: 'success',
             duration: 1500,
             onClose: () => {
-              this.getDataList()
+              this.getDataList({ 'type': this.materialType })
             }
           })
         } else {
@@ -702,7 +740,7 @@ export default {
             type: 'success',
             duration: 1500,
             onClose: () => {
-              this.getDataList()
+              this.getDataList({ 'type': this.materialType })
             }
           })
         } else {

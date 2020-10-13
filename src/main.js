@@ -24,6 +24,7 @@ Vue.use(ElementUI, { locale })
 
 // 挂载全局
 Vue.prototype.$service = httpRequest // ajax请求方法
+
 Vue.config.productionTip = false
 
 // 注册自定义过滤器，下列代码是引用所有的自定义过滤器

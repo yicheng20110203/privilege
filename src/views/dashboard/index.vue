@@ -1,21 +1,13 @@
 <template>
   <div class="dashboard-container">
-    <div class="dashboard-text">username: {{ login_name }}</div>
-    <div class="dashboard-text">userid: {{ userid }}</div>
+    <div class="dashboard-text" />
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
 
 export default {
-  name: 'Dashboard',
-  computed: {
-    ...mapGetters([
-      'login_name',
-      'userid'
-    ])
-  }
+  name: 'Dashboard'
 }
 </script>
 

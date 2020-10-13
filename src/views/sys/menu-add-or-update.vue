@@ -1,10 +1,13 @@
 <template>
   <el-dialog
-    :title="!dataForm.id ? '新增根菜单' : '修改'"
+    :title="!dataForm.id ? '新增根菜单' : '修改菜单'"
     :close-on-click-modal="false"
     :visible.sync="visible"
   >
-    <el-form ref="dataForm" :model="dataForm" :rules="dataRule" label-width="80px" @keyup.enter.native="dataFormSubmit()">
+    <el-form ref="dataForm" :model="dataForm" :rules="dataRule" label-width="80px" @keyup.enter.native="dataFormSubmit">
+      <el-form-item v-if="dataForm.menu_key" label="父菜单" prop="parentName">
+        <el-input v-model="dataForm.parentName" :disabled="true" />
+      </el-form-item>
       <el-form-item label="菜单名称" prop="name">
         <el-input v-model="dataForm.name" placeholder="菜单名称(vue name)" />
       </el-form-item>
@@ -17,8 +20,19 @@
       <el-form-item label="菜单标题" prop="title">
         <el-input v-model="dataForm.title" placeholder="菜单标题(vue title)" />
       </el-form-item>
+      <el-form-item v-if="dataForm.name" label="菜单显示" prop="hidden">
+        <el-radio-group v-model="dataForm.hidden">
+          <el-radio :label="2">显示</el-radio>
+          <el-radio :label="1">不显示</el-radio>
+        </el-radio-group>
+      </el-form-item>
       <el-form-item label="排序号" prop="display_order">
-        <el-input-number v-model="dataForm.display_order" controls-position="right" :min="0" label="排序号" />
+        <el-input-number
+          v-model="dataForm.display_order"
+          controls-position="right"
+          :min="0"
+          label="排序号"
+        />
       </el-form-item>
       <el-form-item label="菜单图标" prop="icon">
         <el-row>
@@ -42,7 +56,13 @@
                 </div>
               </div>
             </el-popover>
-            <el-input v-model="dataForm.icon" v-popover:iconListPopover :readonly="true" placeholder="菜单图标名称" class="icon-list__input" />
+            <el-input
+              v-model="dataForm.icon"
+              v-popover:iconListPopover
+              :readonly="true"
+              placeholder="菜单图标名称"
+              class="icon-list__input"
+            />
           </el-col>
 
         </el-row>
@@ -56,8 +76,9 @@
 </template>
 
 <script>
-import { menuAdd } from '@/api/menus'
+import { menuAdd, menuUpdate } from '@/api/menus'
 import Icon from '@/icons'
+// import { timers } from '../../../public/static/UEditor/third-party/jquery-1.10.2'
 export default {
   data() {
     return {
@@ -76,6 +97,7 @@ export default {
         name: '', // 页面name
         icon: '', // 菜单icon
         menu_key: '', // 菜单key,一级菜单添加无需传递，添加子菜单必须传递
+        hidden: '2',
         display_order: 0, // 排序，值越小越靠前
         iconList: []
       },
@@ -104,9 +126,24 @@ export default {
     this.iconList = Icon.getNameList()
   },
   methods: {
-    init(id) {
-      this.dataForm.id = id || 0
-      console.log('dataForm-id', this.dataForm.id)
+    // 修改，获取菜单id
+    init(data) {
+      this.dataForm.id = data.id
+      this.dataForm.name = data.name
+      this.dataForm.path = data.path
+      this.dataForm.url = data.component
+      this.dataForm.title = data.title
+      this.dataForm.display_order = data.display_order
+      this.dataForm.icon = data.icon
+    },
+    // 添加子菜单，获取父级菜单id
+    Submenu(data) {
+      console.log('获取父级菜单id', data)
+      this.dataForm.menu_key = data.menu_key
+      this.dataForm.parentName = data.name
+    },
+    // 显示
+    openDialog() {
       this.visible = true
     },
     // 菜单树选中
@@ -125,20 +162,59 @@ export default {
     },
     // 表单提交
     dataFormSubmit() {
+      if (this.dataForm.id) {
+        this.updateMenuHandle()
+      } else {
+        this.addMenuHandle()
+      }
+    },
+    // 添加菜单
+    addMenuHandle() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           menuAdd(this.$service.adornData({
-            path: this.dataForm.path,
-            component: this.dataForm.url,
-            title: this.dataForm.title,
-            name: this.dataForm.name,
-            icon: this.dataForm.icon,
+            'path': this.dataForm.path,
+            'component': this.dataForm.url,
+            'title': this.dataForm.title,
+            'name': this.dataForm.name,
+            'icon': this.dataForm.icon,
             // menu_key: this.dataForm.menu_key,
-            display_order: this.dataForm.display_order
+            'display_order': this.dataForm.display_order
           })).then(response => {
             if (response && response.code === 0) {
               this.$message({
-                message: '操作成功',
+                message: '添加成功',
+                type: 'success',
+                duration: 1500,
+                onClose: () => {
+                  this.visible = false
+                  this.$emit('refreshDataList')
+                }
+              })
+            } else {
+              this.$message.error(response.msg)
+            }
+          })
+        }
+      })
+    },
+    // 修改菜单
+    updateMenuHandle() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          menuUpdate(this.$service.adornData({
+            'id': this.dataForm.id,
+            'path': this.dataForm.path,
+            'component': this.dataForm.url,
+            'title': this.dataForm.title,
+            'name': this.dataForm.name,
+            'icon': this.dataForm.icon,
+            'menu_key': this.dataForm.menu_key,
+            'display_order': this.dataForm.display_order
+          })).then(response => {
+            if (response && response.code === 0) {
+              this.$message({
+                message: '菜单更新成功',
                 type: 'success',
                 duration: 1500,
                 onClose: () => {

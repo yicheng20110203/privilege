@@ -1,6 +1,6 @@
 module.exports = {
 
-  title: '数字中欧',
+  title: '公众号推广',
 
   /**
    * @type {boolean} true | false

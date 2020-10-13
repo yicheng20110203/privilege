@@ -1,9 +1,11 @@
 <template>
   <div class="dashboard-container">
-    <el-steps :active="active" finish-status="success">
-      <el-step title="基本信息" icon="el-icon-upload" />
-      <el-step title="设置小节" icon="el-icon-circle-plus" />
-    </el-steps>
+    <div>
+      <el-steps :active="active" finish-status="success" style="margin-bottom: 20px;">
+        <el-step title="基本信息" icon="el-icon-upload" />
+        <el-step title="设置小节" icon="el-icon-circle-plus" />
+      </el-steps>
+    </div>
     <div v-if="active === 0">
       <el-form ref="dataForm" :rules="dataRule" :model="dataForm" label-width="auto" size="medium" label-suffix=":">
         <el-form-item label="章节编号" prop="code">
@@ -26,42 +28,39 @@
             <el-input
               v-model="dataForm.desc"
               type="textarea"
+              :rows="5"
               placeholder="请输入章节备注信息"
-              :autosize="{ minRows: 2, maxRows: 4}"
               maxlength="200"
               show-word-limit
             />
           </el-col>
         </el-form-item>
         <el-form-item label="标签" prop="tags">
-          <div class="block">
-            <el-cascader
-              v-model="dataForm.tags"
-              :options="chaptertags"
-              :props="{ multiple: true,checkStrictly: true,value: 'key', label: 'val' }"
-              placeholder="请选择章节标签"
-              clearable
-            />
-          </div>
+          <el-checkbox-group v-model="dataForm.tags">
+            <el-checkbox v-for="item in chaptertags" :key="item.key" :value="item.key" :label="item.key">{{ item.val }}</el-checkbox>
+          </el-checkbox-group>
         </el-form-item>
         <el-form-item label="章节分类" prop="classification" class="el-form-item--ys">
           <el-cascader
             v-model="dataForm.classification"
             :options="chapterCategoryList"
+            :show-all-levels="false"
             :props="{ checkStrictly: true, value: 'key', label: 'val' }"
             placeholder="请选择章节分类"
             clearable
+            @change="handleChange"
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="basicInfoHandle">下一步</el-button>
+          <el-button type="primary" @click="basicInfoHandle">保存</el-button>
+          <el-button v-if="dataForm.id" type="primary" @click="basicNextStep">下一步</el-button>
         </el-form-item>
       </el-form>
     </div>
     <div v-if="active === 1">
       <el-form label-width="auto" size="medium" label-suffix=":">
         <el-form-item>
-          <el-button type="danger" :disabled="dataListSelections.length <= 0" @click="chapterDeleteHandle">批量删除</el-button>
+          <el-button type="danger" :disabled="dataListSelections.length <= 0" @click="batchDeleteHandle">批量删除</el-button>
           <el-button type="primary" @click="getChooseChapter">+添加内容</el-button>
           <span style="color:#f40;font-size:14px;margin-left:10px">可通过设置数字调整排序，默认按照升序排列</span>
         </el-form-item>
@@ -76,7 +75,9 @@
           <el-table-column type="selection" header-align="center" align="center" width="50" />
           <el-table-column prop="display_order" label="排序" header-align="center" align="center" width="80">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.display_order" />
+              <el-input
+                v-model="scope.row.display_order"
+              />
             </template>
           </el-table-column>
           <el-table-column prop="name" label="内容名称" header-align="center" align="center" />
@@ -88,8 +89,10 @@
           </el-table-column>
           <el-table-column prop="try_reading" label="是否可试看" header-align="center" align="center">
             <template slot-scope="scope">
-              <el-radio v-model="scope.row.try_reading" :label="1">是</el-radio>
-              <el-radio v-model="scope.row.try_reading" :label="2">否</el-radio>
+              <el-radio-group v-model="scope.row.try_reading">
+                <el-radio :label="1">是</el-radio>
+                <el-radio :label="2">否</el-radio>
+              </el-radio-group>
             </template>
           </el-table-column>
           <el-table-column label="操作" fixed="right" header-align="center" align="center">
@@ -128,10 +131,21 @@
 <script>
 import ChooseChapter from './choose-chapter'
 import { getCategoryListTree } from '@/api/categorytree'
-import { DATETIME } from '@/utils/global-element'
+import { getTime } from '@/utils'
 import { getTagTree } from '@/api/label'
-import { getChapterList, chapterAdd, chapterUpdate, chapterSectionSelected, chapterSetOrder, chapterSectionDelete } from '@/api/chapter'
-import { TAG_CHAPTER, CHAPTER, SCENES_ONE } from '@/utils/global-element'
+import {
+  getChapterList,
+  chapterAdd,
+  chapterUpdate,
+  chapterSectionSelected,
+  chapterSetOrder,
+  chapterSectionDelete
+} from '@/api/chapter'
+import {
+  TAG_CHAPTER,
+  CHAPTER,
+  SCENES_ONE
+} from '@/utils/global-element'
 export default {
   name: 'AddOrUpdateChapter',
   components: {
@@ -148,12 +162,12 @@ export default {
       status: '', // 章节状态
       menuSelect: CHAPTER,
       dataForm: {
-        id: '', // 章节id
-        code: DATETIME, // 章节编号
+        id: 0, // 章节id
+        code: getTime(), // 章节编号
         name: '', // 章节名称
         desc: '', // 章节描述
         tags: [], // 选中标签
-        classification: [] // 选中章节分类
+        classification: '' // 选中章节分类
       },
       dataListLoading: false,
       contentDataList: [],
@@ -180,6 +194,13 @@ export default {
     }
   },
   methods: {
+    // 选择
+    handleChange(value) {
+      this.dataForm.classification = value[value.length - 1]
+    },
+    submitEdit(id, display_order, try_reading) {
+      console.log('999999', id, display_order, try_reading)
+    },
     // 基本信息 下一步
     basicInfoHandle() {
       if (this.dataForm.id) {
@@ -187,6 +208,11 @@ export default {
       } else {
         this.createChapterHandle()
       }
+    },
+    // 编辑下一步
+    basicNextStep() {
+      this.getConnectedContentList()
+      if (this.active++ > 1) this.active = 0
     },
     // 获取分类
     getCategoryList(types = {}) {
@@ -206,52 +232,61 @@ export default {
     },
     // 创建章节
     createChapterHandle() {
-      chapterAdd(this.$service.adornData({
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'desc': this.dataForm.desc,
-        'tag_key': this.dataForm.chapterlist,
-        'category_key': this.dataForm.classification[0],
-        'scenes': SCENES_ONE
-      })).then(res => {
-        if (res && res.code === 0) {
-          this.dataForm.id = res.data.id
-          this.$message({
-            message: '章节添加成功',
-            type: 'success',
-            duration: 1500
+      this.$refs.dataForm.validate((valid) => {
+        if (valid) {
+          chapterAdd(this.$service.adornData({
+            'code': this.dataForm.code,
+            'name': this.dataForm.name,
+            'desc': this.dataForm.desc,
+            'tag_key': this.dataForm.tags,
+            'category_key': this.dataForm.classification,
+            'scenes': SCENES_ONE
+          })).then(res => {
+            if (res && res.code === 0) {
+              this.dataForm.id = res.data.id
+              this.$message({
+                message: '章节添加成功',
+                type: 'success',
+                duration: 1500
+              })
+              this.getConnectedContentList()
+              if (this.active++ > 1) this.active = 0
+            } else {
+              this.$message.error(res.msg)
+            }
           })
-          this.getConnectedContentList()
-          if (this.active++ > 1) this.active = 0
         } else {
-          this.$message.error(res.msg)
+          return false
         }
       })
     },
     // 更新章节内容
     updateChapterHandle() {
-      console.log('678', this.dataForm.tags, '分类==', this.dataForm.classification)
-      const tag = []
-      this.dataForm.tags.forEach(item => tag.push(item[0]))
-      chapterUpdate(this.$service.adornData({
-        'id': this.dataForm.id,
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'desc': this.dataForm.desc,
-        'tag_key': tag,
-        'category_key': this.dataForm.classification[0],
-        'status': this.status
-      })).then(res => {
-        if (res && res.code === 0) {
-          this.$message({
-            message: '章节更新成功',
-            type: 'success',
-            duration: 1500
+      this.$refs.dataForm.validate((valid) => {
+        if (valid) {
+          chapterUpdate(this.$service.adornData({
+            'id': this.dataForm.id,
+            'code': this.dataForm.code,
+            'name': this.dataForm.name,
+            'desc': this.dataForm.desc,
+            'tag_key': this.dataForm.tags,
+            'category_key': this.dataForm.classification,
+            'scenes': SCENES_ONE
+          })).then(res => {
+            if (res && res.code === 0) {
+              this.$message({
+                message: '章节更新成功',
+                type: 'success',
+                duration: 1500
+              })
+              this.getConnectedContentList()
+              if (this.active++ > 1) this.active = 0
+            } else {
+              this.$message.error(res.msg)
+            }
           })
-          this.getConnectedContentList()
-          if (this.active++ > 1) this.active = 0
         } else {
-          this.$message.error(res.msg)
+          return false
         }
       })
     },
@@ -265,8 +300,8 @@ export default {
           this.dataForm.code = contentlist.code
           this.dataForm.name = contentlist.name
           this.dataForm.desc = contentlist.desc
-          this.dataForm.tags = contentlist.tags
-          this.dataForm.classification = contentlist.categories
+          this.dataForm.tags = contentlist.tags.map(item => item.key)
+          this.dataForm.classification = contentlist.categories[0].key
           this.status = contentlist.status
         } else {
           this.$message.error(res.msg)
@@ -302,6 +337,10 @@ export default {
     // 选择课程
     getChooseChapter() {
       this.$refs.ChooseChapter.openDialog()
+      this.$nextTick(() => {
+        this.$refs.ChooseChapter.getDataList()
+        this.$refs.ChooseChapter.getMaterialTypes()
+      })
     },
     // 取消
     cancelHandle() {
@@ -313,7 +352,7 @@ export default {
     },
     // 保存
     dataFormSubmit() {
-      if (this.dataListSelections) {
+      if (this.dataListSelections.length > 0) {
         const sectionsData = []
         this.dataListSelections.forEach(item => {
           const sectionsList = {
@@ -323,10 +362,6 @@ export default {
           }
           sectionsData.push(sectionsList)
         })
-        console.log('保存章节==', this.$service.adornData({
-          'chapter_id': this.dataForm.id,
-          'items': sectionsData
-        }))
         chapterSetOrder(this.$service.adornData({
           'chapter_id': this.dataForm.id,
           'items': sectionsData
@@ -345,25 +380,49 @@ export default {
           }
         })
       } else {
-        this.$message.warning('请选择小节')
+        this.$message.warning('请至少勾选一个小节')
       }
     },
     // 章节关联小节 - 删除
     chapterDeleteHandle(id) {
-      var chapterIds = id ? [id] : this.dataListSelections.map(item => {
-        return item.pk_id
-      })
-      this.$confirm(`确定对小节进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
+      this.$confirm(`确定对小节进行[删除]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
         chapterSectionDelete(this.$service.adornData({
-          'chapter_ids': chapterIds
+          'ids': [id]
         })).then((data) => {
           if (data && data.code === 0) {
             this.$message({
-              message: '删除成功',
+              message: '小节删除成功',
+              type: 'success',
+              duration: 1500,
+              onClose: () => {
+                this.getConnectedContentList()
+              }
+            })
+          } else {
+            this.$message.error(data.msg)
+          }
+        })
+      }).catch(() => {})
+    },
+    // 章节关联小节 - 批量删除
+    batchDeleteHandle() {
+      const chapterlist = []
+      this.dataListSelections.forEach(item => chapterlist.push(item.pk_id))
+      this.$confirm(`确定对小节进行[批量删除]操作?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        chapterSectionDelete(this.$service.adornData({
+          'ids': chapterlist
+        })).then((data) => {
+          if (data && data.code === 0) {
+            this.$message({
+              message: '批量删除小节成功',
               type: 'success',
               duration: 1500,
               onClose: () => {
@@ -376,6 +435,7 @@ export default {
         })
       }).catch(() => {})
     }
+
   }
 }
 </script>
@@ -388,6 +448,9 @@ export default {
   &-text {
     font-size: 30px;
     line-height: 46px;
+  }
+  &-box {
+    margin-top: 50px;
   }
 }
 </style>

@@ -74,6 +74,7 @@
           :default-props="defaultProps"
           :category-type="materialCategoryType"
           @nodeClick="switchCategory"
+          @refreshCategoryDataList="getCategoryList({ 'types': menuSelect })"
         />
       </el-aside>
 
@@ -95,7 +96,8 @@
           </el-table-column>
           <el-table-column prop="price" label="价格" header-align="center" align="center">
             <template slot-scope="scope">
-              {{ scope.row.price|priceFilter(scope.row.price) }}
+              <div v-if="scope.row.price === 0">免费</div>
+              <div v-if="scope.row.price > 0">{{ scope.row.price|priceFilter(scope.row.price) }}</div>
             </template>
           </el-table-column>
           <el-table-column prop="status_desc" label="状态" header-align="center" align="center" />
@@ -199,14 +201,17 @@ export default {
   methods: {
     // 创建
     addCourseHandle() {
+      sessionStorage.setItem('active', 0)
       this.$router.push({ path: '/course/add-or-update-course' })
     },
     // 编辑课程
     editCourseHandle(data) {
+      sessionStorage.setItem('active', 0)
       this.$router.replace({ path: '/course/add-or-update-course', query: { courseid: data.id }})
     },
     // 获取分类
     getCategoryList(types = {}) {
+      this.dataListLoading = true
       getCategoryListTree(this.$service.adornData({
         ...types
       })).then(res => {
@@ -216,6 +221,7 @@ export default {
           this.categoryList = []
         }
       })
+      this.dataListLoading = false
     },
     // 切换分类
     switchCategory(item) {
@@ -229,6 +235,7 @@ export default {
     },
     // 课程列表
     getDataList(type = {}) {
+      this.dataListLoading = true
       getCourseList(this.$service.adornData({
         'page': this.pageIndex,
         'size': this.pageSize,
@@ -246,6 +253,7 @@ export default {
         this.courseDataList = res && res.code === 0 ? res.data.list : []
         this.totalPage = res && res.code === 0 ? res.data.total_size : []
       })
+      this.dataListLoading = false
     },
     // 获取课程类型/标签/状态
     getStatusTag() {
@@ -283,6 +291,7 @@ export default {
     // 重置
     resetForm(formName) {
       this.$refs[formName].resetFields()
+      this.getDataList()
     },
     // 上架
     onlineCoursePackage(lessonid) {

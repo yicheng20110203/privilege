@@ -133,6 +133,21 @@ export function randomString() {
   return uuid.replace(/-/g, '')
 }
 
+export function uploadImageUrl() {
+  return process.env.NODE_ENV === 'production' ? process.env.VUE_APP_UPLOADOSSURL : process.env.VUE_APP_UPLOADOSSURL
+}
+
+export function getTime() {
+  var d = new Date()
+  var yy = d.getFullYear().toString()
+  var MM = d.getMonth() + 1 >= 10 ? (d.getMonth() + 1) : '0' + (d.getMonth() + 1)
+  var DD = d.getDate() >= 10 ? d.getDate() : '0' + d.getDate()
+  var h = d.getHours() >= 10 ? d.getHours() : '0' + d.getHours()
+  var mm = d.getMinutes() >= 10 ? d.getMinutes() : '0' + d.getMinutes()
+  var ss = d.getSeconds() >= 10 ? d.getSeconds() : '0' + d.getSeconds()
+  return yy + MM + DD + h + mm + ss
+}
+
 /**
  * 富文本 配置
  */
@@ -145,7 +160,7 @@ export function ueditorConfig() {
     // 初始容器宽度
     initialFrameWidth: '100%',
     // 上传文件接口（这个地址是我为了方便各位体验文件上传功能搭建的临时接口，请勿在生产环境使用！！！）
-    serverUrl: 'http://35.201.165.105:8000/controller.php'
+    serverUrl: ''
     // UEditor 资源文件的存放路径，如果你使用的是 vue-cli 生成的项目，通常不需要设置该选项，vue-ueditor-wrap 会自动处理常见的情况，如果需要特殊配置，参考下方的常见问题2
     // UEDITOR_HOME_URL: '/static/UEditor/'
     // 配合最新编译的资源文件，你可以实现添加自定义Request Headers,详情https://github.com/HaoChuan9421/ueditor/commits/dev-1.4.3.3

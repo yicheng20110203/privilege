@@ -6,7 +6,6 @@
       :props="defaultProps"
       default-expand-all
       :expand-on-click-node="false"
-      draggable
       :allow-drop="allowDrop"
       :allow-drag="allowDrag"
       @node-click="nodeclick"
@@ -41,12 +40,13 @@
       title="创建分类"
       :close-on-click-modal="false"
       :visible.sync="visible"
-      width="20%"
+      width="25%"
       center
+      @closed="closedDialog"
     >
-      <el-form ref="dataForm" :model="dataForm" :inline="true" size="medium" label-suffix=":">
+      <el-form ref="dataForm" :rules="dataRule" :model="dataForm" :inline="true" size="medium" label-suffix=":">
         <el-form-item label="上级分类" prop="superiorName">
-          <el-input v-model="dataForm.superiorName" maxlength="15" clearable disabled />
+          <el-input v-model="dataForm.superiorName" maxlength="15" disabled />
         </el-form-item>
         <el-form-item label="分类名称" prop="name">
           <el-input v-model="dataForm.name" placeholder="请输入分类名称" maxlength="15" clearable />
@@ -66,7 +66,7 @@
 <script>
 import { categoryAddTree, categoryUpdateTree, categoryDeleteTree } from '@/api/categorytree'
 export default {
-  name: 'AppiumTree1',
+  name: 'CategoryTree',
   props: {
     forbidDropId: {
       type: Array,
@@ -100,6 +100,10 @@ export default {
       visible: false,
       treeData: [],
       newApiGroupName: '',
+      dataRule: {
+        name: [{ required: true, message: '分类名称不能为空', trigger: 'blur' }],
+        desc: [{ required: true, message: '分类简介不能为空', trigger: 'blur' }]
+      },
       dataForm: {
         id: '',
         superiorKey: '',
@@ -109,9 +113,14 @@ export default {
       }
     }
   },
+  watch: {
+    dataTree(val) {
+      this.treeData = val
+    }
+  },
   created() {
     this.treeData = this.dataTree
-    this.getApiGroupData()
+    // this.getApiGroupData()
   },
   methods: {
     // 调api获取接口分组数据
@@ -148,6 +157,14 @@ export default {
     allowDrag(draggingNode) {
       return !this.forbidDragId.includes(draggingNode.data.id)
     },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+    },
     // 添加子类
     dataFormSubclass() {
       categoryAddTree(this.$service.adornData({
@@ -163,6 +180,7 @@ export default {
             duration: 1500,
             onClose: () => {
               this.visible = false
+              this.resetForm('dataForm')
               this.$emit('refreshCategoryDataList')
             }
           })
@@ -171,16 +189,16 @@ export default {
         }
       })
     },
-    // 删除分类d
+    // 删除分类
     deleteSubclassHandle() {
-      this.$confirm(`确定对[${this.dataForm.superiorName}]进行[${this.dataForm.superiorKey ? '删除' : '批量删除'}]操作?`, '提示', {
+      this.$confirm(`确定对分类[${this.dataForm.superiorName}]进行[删除]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
         categoryDeleteTree(this.$service.adornData({
           'key': this.dataForm.superiorKey,
-          'fuzzy_key': 0
+          'type': this.categoryType
         })).then((res) => {
           if (res && res.code === 0) {
             this.$message({
@@ -211,34 +229,23 @@ export default {
     },
 
     edit(node, data) {
-      console.log(
-        'before:',
-        data.id,
-        data.key,
-        data.val,
-        data[this.defaultProps.label],
-        data.isEdit
-      )
+      // console.log(
+      //   'before:',
+      //   data.id,
+      //   data.key,
+      //   data.val,
+      //   data[this.defaultProps.label],
+      //   data.isEdit
+      // )
       this.$set(data, 'isEdit', 1)
       this.newApiGroupName = data[this.defaultProps.label]
       this.$nextTick(() => {
         this.$refs.input.focus()
       })
-      console.log('after:', data.id, data[this.defaultProps.label], data.isEdit)
+      // console.log('after:', data.id, data[this.defaultProps.label], data.isEdit)
     },
-
+    // 更新分类
     submitEdit(node, data) {
-      // if (data[this.defaultProps.label] === this.newApiGroupName) {
-      //   console.log('没有修改')
-      //   // this.newApiGroupName = ''
-      //   this.$set(data, 'isEdit', 0)
-      // } else {
-      //   this.$set(data, [this.defaultProps.label], this.newApiGroupName)
-      //   this.newApiGroupName = ''
-      //   this.$set(data, 'isEdit', 0)
-      //   // console.log('after:', data.id, data.label)
-      //   this.updateApiGroup(this.data)
-      // }
       this.dataForm.id = data.id
       this.dataForm.superiorKey = data.key
       this.dataForm.superiorName = data.val

@@ -5,34 +5,38 @@
     :visible.sync="visible"
     width="60%"
     center
+    @closed="closedDialog"
   >
     <el-form ref="dataForm" :inline="true" :model="dataForm" @keyup.enter.native="getDataList">
       <el-form-item label="编号:" prop="code">
-        <el-input v-model="dataForm.code" prefix-icon="el-icon-search" placeholder="请输入课包编号" clearable />
+        <el-input v-model="dataForm.code" prefix-icon="el-icon-search" placeholder="请输入课程编号" clearable />
       </el-form-item>
       <el-form-item label="名称:" prop="name">
-        <el-input v-model="dataForm.name" prefix-icon="el-icon-search" label="名称" placeholder="请输入课包名称" clearable />
+        <el-input v-model="dataForm.name" prefix-icon="el-icon-search" label="名称" placeholder="请输入课程名称" clearable />
       </el-form-item>
       <el-form-item label="标签" prop="tag">
-        <el-cascader
+        <el-select
           v-model="dataForm.tag"
-          :options="dataForm.tags"
-          :props="{ checkStrictly: true, value: 'key', label: 'val' }"
           placeholder="请选择课程标签"
           clearable
-        />
+        >
+          <el-option v-for="item in dataForm.tags" :key="item.key" :label="item.val" :value="item.key" />
+        </el-select>
       </el-form-item>
       <el-form-item label="分类" prop="category">
         <el-cascader
           v-model="dataForm.category"
           :options="dataForm.category_list"
+          :show-all-levels="false"
           :props="{ checkStrictly: true, value: 'key', label: 'val' }"
           placeholder="请选择课程分类"
           clearable
+          @change="handleChange"
         />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="getDataList">查询</el-button>
+        <el-button type="primary" @click="resetForm('dataForm')">重置</el-button>
       </el-form-item>
     </el-form>
     <el-table
@@ -59,7 +63,8 @@
       </el-table-column>
       <el-table-column prop="price" label="价格" header-align="center" align="center">
         <template slot-scope="scope">
-          <label size="small">{{ scope.row.price|priceFilter(scope.row.price) }}</label>
+          <div v-if="scope.row.price === 0">免费</div>
+          <div v-if="scope.row.price > 0">{{ scope.row.price|priceFilter(scope.row.price) }}</div>
         </template>
       </el-table-column>
       <el-table-column prop="try_reading_desc" label="是否可试看" header-align="center" align="center" />
@@ -114,16 +119,14 @@ export default {
       }
     }
   },
-  created() {
-    // 获取课包标签
-    this.getStatusTag()
-    // 获取可关联
-    this.getDataList()
-  },
   methods: {
     // 显示
     openDialog() {
       this.visible = true
+    },
+    // 选择
+    handleChange(value) {
+      this.dataForm.category = value[value.length - 1]
     },
     // 每页数
     sizeChangeHandle(val) {
@@ -139,6 +142,15 @@ export default {
     // 多选
     selectionChangeHandle(val) {
       this.dataListSelections = val
+    },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+      this.getDataList()
     },
     // 获取课包状态和标签
     getStatusTag() {
@@ -157,21 +169,14 @@ export default {
     },
     // 查询
     getDataList() {
-      console.log('课程查询', this.$service.adornData({
-        'page': this.pageIndex,
-        'size': this.pageSize,
-        'package_id': this.packageId,
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'tag_key': this.dataForm.category[0]
-      }))
       lessonPackageSelect(this.$service.adornData({
         'page': this.pageIndex,
         'size': this.pageSize,
-        'package_id': this.packageId,
+        'package_id': parseInt(this.packageId),
         'code': this.dataForm.code,
         'name': this.dataForm.name,
-        'tag_key': this.dataForm.category[0]
+        'tag_key': this.dataForm.tag,
+        'category_key': this.dataForm.category
       })).then(res => {
         this.dataList = res && res.code === 0 ? res.data.list : []
         this.totalPage = res && res.code === 0 ? res.data.total_size : []
@@ -180,6 +185,7 @@ export default {
     // 取消窗口
     cancelHandle() {
       this.visible = false
+      this.resetForm('dataForm')
       this.dataListSelections = []
     },
     // 表单提交
@@ -192,13 +198,8 @@ export default {
         }
         packageData.push(packageList)
       })
-      console.log('课包-确定选择', this.$service.adornData({
-        'id': this.courseId,
-        'lessons': packageData,
-        'scenes': SCENES_TWO
-      }))
       lessonPackageUpdate(this.$service.adornData({
-        'id': this.courseId,
+        'id': this.packageId,
         'lessons': packageData,
         'scenes': SCENES_TWO
       })).then(res => {
@@ -209,6 +210,7 @@ export default {
             duration: 1500,
             onClose: () => {
               this.visible = false
+              this.resetForm('dataForm')
               this.dataListSelections = []
               this.$emit('refreshDataList')
             }

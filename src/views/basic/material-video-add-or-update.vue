@@ -1,10 +1,11 @@
 <template>
   <el-dialog
-    :title="submitType===1 ? '上传视频' : submitType===2 ? '上传音频' : '上传图片'"
+    :title="submitType===1 ? '上传视频' : '上传图片'"
     :close-on-click-modal="false"
     :visible.sync="visible"
+    @closed="closedDialog"
   >
-    <el-form ref="dataForm" :model="dataForm" size="medium" label-suffix=":">
+    <el-form ref="dataForm" :rules="dataRule" :model="dataForm" size="medium" label-suffix=":">
       <el-form-item label="编号" prop="code">
         <el-col :span="8">
           <el-input v-model="dataForm.code" placeholder="请输入素材编号" clearable />
@@ -20,14 +21,18 @@
           ref="cascader"
           v-model="dataForm.classification"
           :options="menuCategory"
+          :show-all-levels="false"
           :props="{ checkStrictly: true, value: 'key', label: 'val' }"
+          placeholder="请选择素材分类"
           clearable
+          @change="handleChange"
         />
       </el-form-item>
       <el-form-item v-if="uploadType === 'video'" label="上传视频" prop="videourl">
         <el-upload
           :show-file-list="false"
-          accept=".mp4,.mkv"
+          accept=".mp4,.avi,.wmv"
+          :disabled="is_upload"
           action="actionUrl"
           :on-error="handleError"
           :on-progress="uploadVideoProcess"
@@ -37,28 +42,17 @@
         >
           <el-button size="small" type="primary">选择文件</el-button>
         </el-upload>
-        <el-progress v-if="uploadPercent!==0" :percentage="uploadPercent" style="margin-top:10px;" />
-        <vue-aliplayer v-if="dataForm.videoPlayerUrl" ref="VueAliplayer" :source="dataForm.videoPlayerUrl" />
+        <span style="font-size: 12px; margin-left: 12px; color: #f40;">支持mp4/avi/wmv格式，大小不超过2GB</span>
       </el-form-item>
-      <el-form-item v-if="uploadType === 'audio'" label="上传音频" prop="audiourl">
-        <el-upload
-          :on-progress="uploadVideoProcess"
-          accept=".mp3"
-          action="actionUrl"
-          :show-file-list="false"
-          :on-error="handleError"
-          :on-remove="handleRemove"
-          :on-success="handleMediaSuccess"
-          :before-upload="beforeUpload"
-        >
-          <el-button size="small" type="primary">点击上传</el-button>
-        </el-upload>
-        <audio v-if="dataForm.audioPlayerUrl" :src="dataForm.audioPlayerUrl" controls style="margin-top: 10px" />
-        <el-progress v-if="uploadPercent!==0" :percentage="uploadPercent" style="margin-top:10px;" />
+      <el-form-item v-if="uploadType === 'video'" label="上传进度">
+        <el-col :span="18">
+          <el-progress v-if="uploadPercent!==0" :percentage="uploadPercent" />
+        </el-col>
       </el-form-item>
-      <el-form-item v-if="uploadType === 'image'" label="上传图片" prop="image">
+      <el-form-item v-if="uploadType === 'image'" label="上传图片" prop="imageUrl">
         <el-upload
           v-loading="loading"
+          :disabled="is_upload"
           class="avatar-uploader"
           action="actionUrl"
           accept=".png,.jpg,.jpeg"
@@ -66,7 +60,7 @@
           :show-file-list="false"
           :before-upload="beforeUpload"
         >
-          <img v-if="image" :src="image" class="avatar">
+          <img v-if="dataForm.imageUrl" :src="dataForm.imageUrl" class="avatar">
           <i v-else class="el-icon-plus avatar-uploader-icon" />
         </el-upload>
         <label style="margin-left:72px;color: #f40;">文件支持类型 jpg/png,文件大小&lt;2M,建议传274x274</label>
@@ -74,22 +68,17 @@
     </el-form>
     <div slot="footer" class="dialog-footer">
       <el-button @click="cancelHandle">取消</el-button>
-      <el-button type="primary" @click="dataFormSubmit()">确定</el-button>
+      <el-button type="primary" @click="dataFormSubmit">确定</el-button>
     </div>
   </el-dialog>
 </template>
 <script>
 import { ossUpload } from '@/api/oss'
-import { getNewName } from '@/utils'
+import { getNewName, getTime } from '@/utils'
 import { materialAdd } from '@/api/material'
-import { DATETIME } from '@/utils/global-element'
-import VueAliplayer from 'vue-aliplayer-v2'
 import axios from 'axios'
 export default {
   name: 'VideoAddOrUpdate',
-  components: {
-    VueAliplayer: VueAliplayer.Player
-  },
   props: {
     menuCategory: {
       type: Array,
@@ -117,10 +106,13 @@ export default {
       video: '', // 预览视频地址
       audio: '', // 预览音频地址
       filesize: '', // 文件大小
+      is_upload: false,
       dataForm: {
         id: '',
-        code: DATETIME,
+        code: getTime(),
         name: '',
+        videoTimes: 0, // 视频时长
+        audioTimes: 0, // 音频时长
         classification: '', // 选中分类
         videourl: '', // 视频地址
         videoPlayerUrl: '', // 本地视频播放地址
@@ -128,14 +120,30 @@ export default {
         audioPlayerUrl: '', // 本地音频播放地址
         imageUrl: '' // 图片地址
       },
-      actionUrl: 'http://gitbook.eceibs.com.cn/saas30/_book/api/mobile.html#modify-avatar',
+      actionUrl: '',
       fileList: [], // 文件列表
       carryData: {
         success_action_status: '200'
       },
+      dataRule: {
+        code: [{ required: true, message: '素材编号不能为空', trigger: 'blur' }],
+        name: [{ required: true, message: '素材名称不能为空', trigger: 'blur' }],
+        classification: [{ required: true, message: '素材分类不能为空', trigger: 'blur' }],
+        videourl: [{ required: true, message: '请上传视频', trigger: 'blur' }],
+        audiourl: [{ required: true, message: '请上传音频', trigger: 'blur' }],
+        image: [{ required: true, message: '请上传图片', trigger: 'blur' }]
+      },
       validTime: '',
       config: {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          // 属性lengthComputable主要表明总共需要完成的工作量和已经完成的工作是否可以被测量
+          // 如果lengthComputable为false，就获取不到e.total和e.loaded
+          if (e.lengthComputable) {
+            var rate = e.loaded / e.total // 已上传的比例
+            this.uploadPercent = Number(`${(rate * 100).toFixed(2)}`)
+          }
+        }
       }
     }
   },
@@ -144,56 +152,74 @@ export default {
     init(type) {
       this.type = type
       this.getToken(type)
-      console.log('提交类型', this.submitType, '上传类型', this.uploadType, 'type====', type)
+    },
+    // 选择
+    handleChange(value) {
+      this.dataForm.classification = value[value.length - 1]
     },
     // 表单提交
     dataFormSubmit() {
-      console.log(this.materialType + '表单', this.$service.adornData({
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'category_key': this.dataForm.classification[0],
-        'type': this.submitType,
-        'size': this.filesize.toString(),
-        'entity_id': this.uploadType === 'video' ? this.dataForm.videourl : this.uploadType === 'audio' ? this.dataForm.audiourl : this.dataForm.imageUrl
-      }))
-      materialAdd(this.$service.adornData({
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'size': this.filesize.toString(),
-        'category_key': this.dataForm.classification[0],
-        'type': this.submitType,
-        'entity_id': this.uploadType === 'video' ? this.dataForm.videourl : this.uploadType === 'audio' ? this.dataForm.audiourl : this.dataForm.imageUrl
-      })).then(response => {
-        if (response && response.code === 0) {
-          this.$message({
-            message: this.uploadType === 'video' ? '素材视频添加成功' : this.uploadType === 'audio' ? '素材音频添加成功' : '图片添加成功',
-            type: 'success',
-            duration: 1500,
-            onClose: () => {
-              this.visible = false
-              this.$refs.cascader.$refs.panel.clearCheckedNodes()
-              this.$refs.cascader.$refs.panel.activePath = []
-              this.$emit('refreshVideoDataList')
+      this.$refs.dataForm.validate((valid) => {
+        if (valid) {
+          materialAdd(this.$service.adornData({
+            'code': this.dataForm.code,
+            'name': this.dataForm.name,
+            'size': this.filesize.toString(),
+            'category_key': this.dataForm.classification,
+            'times': 0,
+            'type': this.submitType,
+            'entity_id': this.uploadType === 'video' ? this.dataForm.videourl : this.dataForm.imageUrl
+          })).then(response => {
+            if (response && response.code === 0) {
+              this.$message({
+                message: this.uploadType === 'video' ? '素材视频添加成功' : '图片添加成功',
+                type: 'success',
+                duration: 1500,
+                onClose: () => {
+                  this.$refs.cascader.$refs.panel.clearCheckedNodes()
+                  this.$refs.cascader.$refs.panel.activePath = []
+                  this.resetForm('dataForm')
+                  this.uploadPercent = 0
+                  this.dataForm.name = ''
+                  this.uploadType === 'video' ? this.dataForm.videoPlayerUrl = '' : this.dataForm.imageUrl = ''
+                  this.$emit('refreshVideoDataList')
+                  this.visible = false
+                }
+              })
+            } else {
+              this.$message.error(response.msg)
             }
           })
         } else {
-          this.$message.error(response.msg)
+          return false
         }
       })
+    },
+    // 获取视频时长
+    getVideoDuration() {
+      this.dataForm.videoTimes = this.$refs.VueAliplayer.getDuration()
+    },
+    // 获取音频时长
+    getAudioDuration() {
+      this.dataForm.audioTimes = this.$refs.audio.duration
     },
     // 显示
     openDialog() {
       this.visible = true
+    },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
     },
     // 取消
     cancelHandle() {
       this.visible = false
       this.$refs.cascader.$refs.panel.clearCheckedNodes()
       this.$refs.cascader.$refs.panel.activePath = []
-    },
-    // click 触发子菜单
-    handleChange(value) {
-      console.log('获得菜单值', value)
     },
     // 获取token
     getToken(type) {
@@ -237,7 +263,7 @@ export default {
       this.uploadPercent = 0
     },
     uploadVideoProcess(event, file, fileList) {
-      this.uploadPercent = Number(file.percentage).toFixed(0)
+      // this.uploadPercent = Number(file.percentage).toFixed(0)
     },
     handleMediaSuccess(res, file) {
       this.uploadPercent = 0
@@ -245,12 +271,9 @@ export default {
     },
     // 自动上传拦截
     beforeUpload(file) {
+      this.is_upload = true
       switch (this.type) {
         case 'video':
-          this.filesize = file.size
-          this.fileList = [...this.fileList, file]
-          break
-        case 'audio':
           this.filesize = file.size
           this.fileList = [...this.fileList, file]
           break
@@ -263,7 +286,7 @@ export default {
     },
     // 手动上传
     handleUpload(fileName) {
-      this.carryData.key = `${this.carryData.key}${getNewName(fileName)}` // 保存文件名
+      const materialkey = `${this.carryData.key}${getNewName(fileName)}` // 保存文件名
       const formData = new FormData() // form表单
       const timestamp = `${new Date().getTime()}` // 时间戳
       formData.append('name', fileName)
@@ -276,49 +299,44 @@ export default {
         // 判断签名是否过期
         this.getToken(this.type).then(() => {
           // 重新请求签名
-          this.carryData.key = `${this.carryData.key}${getNewName(fileName)}`
-          formData.append('key', this.carryData.key)
+          const materialkey = `${this.carryData.key}${getNewName(fileName)}`
+          formData.append('key', materialkey)
           switch (this.type) {
             case 'video':
-              this.uploadingVideo(formData)
-              break
-            case 'audio':
-              this.uploadingAudio(formData)
+              this.uploadingVideo(formData, materialkey)
               break
             case 'image':
-              this.uploadingImg(formData)
+              this.uploadingImg(formData, materialkey)
               break
           }
         })
       } else {
-        formData.append('key', this.carryData.key)
+        formData.append('key', materialkey)
         switch (this.type) {
           case 'video':
-            this.uploadingVideo(formData)
-            break
-          case 'audio':
-            this.uploadingAudio(formData)
+            this.uploadingVideo(formData, materialkey)
             break
           case 'image':
-            this.uploadingImg(formData)
+            this.uploadingImg(formData, materialkey)
             break
         }
       }
     },
     // 上传视频至阿里云
-    uploadingVideo(formData) {
+    uploadingVideo(formData, materialkey) {
       this.fileList.forEach(file => {
         formData.append('file', file)
       })
       axios.post(`${this.actionUrl}`, formData, this.config).then(res => {
         if (res.status === 200) {
-          this.dataForm.videourl = this.carryData.key
+          this.dataForm.videourl = materialkey
           this.$message({
             message: '视频上传成功',
             type: 'success',
             duration: 1500
           })
-          this.getVideoURL()
+          this.is_upload = false
+          this.fileList = []
         } else {
           this.$message.error('视频上传失败')
         }
@@ -331,46 +349,10 @@ export default {
       } else {
         this.url = `${process.env.VUE_APP_UPLOADOSSURL}`
       }
-      this.dataForm.videoPlayerUrl = this.url + 'v1/coss/file/media' + '?token=' + this.token + '&hash=' + this.carryData.key + '&.m3u8'
-    },
-    // 上传音频到阿里云
-    uploadingAudio(formData) {
-      this.fileList.forEach(file => {
-        formData.append('file', file)
-      })
-      axios.post(`${this.actionUrl}`, formData, this.config).then(res => {
-        if (res.status === 200) {
-          this.dataForm.audiourl = this.carryData.key
-          this.$message({
-            message: '音频上传成功',
-            type: 'success',
-            duration: 1500
-          })
-          this.getAudioURL()
-        } else {
-          this.$message.error('音频上传失败')
-        }
-      })
-    },
-    // 获取音频地址
-    getAudioURL() {
-      return new Promise((resolve, reject) => {
-        if (process.env.NODE_ENV === 'production') {
-          this.url = process.env.VUE_APP_UPLOADOSSURL
-        } else {
-          this.url = `${process.env.VUE_APP_UPLOADOSSURL}`
-        }
-        axios.get(this.url + 'v1/coss/file/audio' + '?token=' + this.token + '&hash=' + this.carryData.key)
-          .then(res => {
-            this.dataForm.audioPlayerUrl = res.data.result.audio_url
-            resolve(res.data)
-          }).catch(() => {
-            reject()
-          })
-      })
+      this.dataForm.videoPlayerUrl = this.url + 'v1/coss/file/media' + '?token=' + this.token + '&hash=' + this.dataForm.videourl + '&.m3u8'
     },
     // 上传图片到阿里云
-    uploadingImg(formData) {
+    uploadingImg(formData, materialkey) {
       this.loading = true // 加载loading
       this.fileList.forEach(file => {
         formData.append('file', file)
@@ -378,17 +360,17 @@ export default {
       axios.post(`${this.actionUrl}`, formData, this.config).then(res => {
         if (res.status === 200) {
           if (process.env.NODE_ENV === 'production') {
-            this.image = this.actionUrl + '/' + this.carryData.key
-            this.dataForm.imageUrl = this.actionUrl + '/' + this.carryData.key
+            this.dataForm.imageUrl = `${process.env.VUE_APP_IMAGEURL}` + '/' + materialkey
           } else {
-            this.image = this.actionUrl + '/' + this.carryData.key
-            this.dataForm.imageUrl = this.actionUrl + '/' + this.carryData.key
+            this.dataForm.imageUrl = this.actionUrl + '/' + materialkey
           }
           this.$message({
             message: '图片上传成功',
             type: 'success',
             duration: 1500
           })
+          this.fileList = []
+          this.is_upload = false
           this.loading = false
         } else {
           this.$message.error('图片上传失败')
@@ -440,5 +422,9 @@ export default {
   .uploadfont {
     line-height:4px;
     color: #8c939d;
+  }
+  .uploadprogress {
+    margin-top:5px;
+    margin-bottom: 5px;
   }
 </style>

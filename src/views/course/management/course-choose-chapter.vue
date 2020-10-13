@@ -5,6 +5,7 @@
     :visible.sync="visible"
     width="60%"
     center
+    @closed="closedDialog"
   >
     <el-form ref="dataForm" :inline="true" :model="dataForm" @keyup.enter.native="getDataList()">
       <el-form-item label="编号:" prop="code">
@@ -14,25 +15,24 @@
         <el-input v-model="dataForm.name" prefix-icon="el-icon-search" label="名称" placeholder="请输入章节名称" clearable />
       </el-form-item>
       <el-form-item label="标签" prop="tag">
-        <el-cascader
-          v-model="dataForm.tag"
-          :options="tags"
-          :props="{ checkStrictly: true, value: 'key', label: 'val' }"
-          placeholder="请选择章节标签"
-          clearable
-        />
+        <el-select v-model="dataForm.tag" placeholder="请选择章节标签" clearable>
+          <el-option v-for="item in tags" :key="item.key" :label="item.val" :value="item.key" />
+        </el-select>
       </el-form-item>
       <el-form-item label="分类" prop="category">
         <el-cascader
           v-model="dataForm.category"
           :options="category_list"
+          :show-all-levels="false"
           :props="{ checkStrictly: true, value: 'key', label: 'val' }"
           placeholder="请选择章节分类"
           clearable
+          @change="handleChange"
         />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="getDataList">查询</el-button>
+        <el-button type="primary" @click="resetForm('dataForm')">重置</el-button>
       </el-form-item>
     </el-form>
     <el-table
@@ -110,16 +110,14 @@ export default {
       }
     }
   },
-  created() {
-    // 获取标签
-    this.getStatusTag()
-    // 获取可关联章节内容
-    this.getDataList()
-  },
   methods: {
     // 显示
     openDialog() {
       this.visible = true
+    },
+    // 选择
+    handleChange(value) {
+      this.dataForm.category = value[value.length - 1]
     },
     // 每页数
     sizeChangeHandle(val) {
@@ -135,6 +133,15 @@ export default {
     // 多选
     selectionChangeHandle(val) {
       this.dataListSelections = val
+    },
+    // 关闭窗口
+    closedDialog() {
+      this.resetForm('dataForm')
+    },
+    // 重置表单
+    resetForm(formName) {
+      this.$refs[formName].resetFields()
+      this.getDataList()
     },
     // 获取课程状态和标签
     getStatusTag() {
@@ -158,7 +165,9 @@ export default {
         'size': this.pageSize,
         'lesson_id': this.courseId,
         'code': this.dataForm.code,
-        'name': this.dataForm.name
+        'name': this.dataForm.name,
+        'tag_key': this.dataForm.tag,
+        'category_key': this.dataForm.category
       })).then(res => {
         this.dataList = res && res.code === 0 ? res.data.list : []
         this.totalPage = res && res.code === 0 ? res.data.total_size : []
@@ -179,11 +188,6 @@ export default {
         }
         chapterData.push(chapterList)
       })
-      console.log('提交-确定选择', this.$service.adornData({
-        'id': this.courseId,
-        'chapters': chapterData,
-        'scenes': SCENES_TWO
-      }))
       courseManagementUpdate(this.$service.adornData({
         'id': this.courseId,
         'chapters': chapterData,

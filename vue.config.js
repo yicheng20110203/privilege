@@ -37,17 +37,23 @@ module.exports = {
   pwa: {},
   // webpack-dev-server 相关配置
   devServer: {
-    // open: false, // 编译完成是否打开网页
-    // host: '0.0.0.0', // 指定使用地址，默认localhost,0.0.0.0代表可以被外界访问
-    open: true, // 编译完成是否打开网页
-    host: 'localhost', // 指定使用地址，默认localhost,0.0.0.0代表可以被外界访问
+    open: false, // 编译完成是否打开网页
+    host: '0.0.0.0', // 指定使用地址，默认localhost,0.0.0.0代表可以被外界访问
     port: port, // 访问端口
     https: false, // 默认情况下,dev-server通过 HTTP 提供服务
     hot: true, // 开启热加载
     hotOnly: false,
+    // proxy: {
+    //   '/devApi': {
+    //     target: 'http://h5-api-dev.ceibsmoment.com/', // API服务器的地址
+    //     changeOrigin: true,
+    //     pathRewrite: {
+    //       '^/devApi': ''
+    //     }
+    //   }
+    // },
     proxy: {
       '/devApi': {
-        // target: 'http://h5-api-test.ceibsmoment.com/', // API服务器的地址
         target: 'http://localhost:8080/', // API服务器的地址
         changeOrigin: true,
         pathRewrite: {

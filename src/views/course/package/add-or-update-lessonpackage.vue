@@ -1,12 +1,12 @@
 <template>
   <div class="dashboard-container">
-    <el-steps :active="active" finish-status="success">
+    <el-steps :active="active" finish-status="success" style="margin-bottom: 20px;">
       <el-step title="基本信息" icon="el-icon-upload" />
       <el-step title="选择内容" icon="el-icon-circle-plus" />
       <el-step title="设置价格" icon="el-icon-setting" />
     </el-steps>
     <div v-if="active === 0">
-      <el-form ref="dataForm" :model="dataForm" label-width="auto" size="medium" label-suffix=":">
+      <el-form ref="dataForm" :model="dataForm" :rules="dataRule" label-width="auto" size="medium" label-suffix=":">
         <el-form-item label="课程编号" prop="code">
           <el-col :span="8">
             <el-input
@@ -27,92 +27,129 @@
             <el-input
               v-model="dataForm.desc"
               type="textarea"
+              :rows="5"
               placeholder="请输入课包简介"
-              :autosize="{ minRows: 2, maxRows: 4}"
               maxlength="200"
               show-word-limit
             />
           </el-col>
         </el-form-item>
         <el-form-item label="标签" prop="tags">
-          <div class="block">
-            <el-cascader
-              v-model="dataForm.tags"
-              :options="tags"
-              :props="{ multiple: true,checkStrictly: true,value: 'key', label: 'val' }"
-              clearable
-            />
-          </div></el-form-item>
-        <el-row :gutter="1">
-          <el-col :span="8">
-            <el-form-item label="上传封面" prop="image">
-              <el-upload
-                v-loading="loading"
-                class="avatar-uploader"
-                action="actionUrl"
-                accept=".png,.jpg,.jpeg"
-                :show-file-list="false"
-                :before-upload="beforeUpload"
-              >
-                <img v-if="dataForm.imageUrl" :src="dataForm.imageUrl" class="avatar">
-                <i v-else class="el-icon-plus avatar-uploader-icon" />
-              </el-upload>
-              <p class="uploadfont">文件支持类型 jpg/jpeg/png</p>
-              <p class="uploadfont">文件大小&lt;2M,建议传274x274</p>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="上传横版图" prop="image">
-              <el-upload
-                v-loading="loading"
-                class="avatar-uploader"
-                action="actionUrl"
-                accept=".png,.jpg,.jpeg"
-                :show-file-list="false"
-                :before-upload="beforeUpload"
-              >
-                <img v-if="dataForm.horizontalUrl" :src="dataForm.horizontalUrl" class="avatar">
-                <i v-else class="el-icon-plus avatar-uploader-icon" />
-              </el-upload>
-              <p class="uploadfont">文件支持类型 jpg/jpeg/png</p>
-              <p class="uploadfont">文件大小&lt;2M,建议传274x274</p>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="8">
-            <el-form-item label="上传竖版图" prop="image">
-              <el-upload
-                v-loading="loading"
-                class="avatar-uploader"
-                action="actionUrl"
-                accept=".png,.jpg,.jpeg"
-                :show-file-list="false"
-                :before-upload="beforeUpload"
-              >
-                <img v-if="dataForm.verticalUrl" :src="dataForm.verticalUrl" class="avatar">
-                <i v-else class="el-icon-plus avatar-uploader-icon" />
-              </el-upload>
-              <p class="uploadfont">文件支持类型 jpg/jpeg/png</p>
-              <p class="uploadfont">文件大小&lt;2M,建议传274x274</p>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="购买后可学习时间" prop="study_days">
-          <el-row :gutter="2">
-            <el-col :span="3">
-              <el-input v-model="dataForm.study_days" placeholder="学习时间">
-                <template slot="append">天</template>
-              </el-input>
-            </el-col>
-            <el-col>
-              <span style="color:#f40;">注意：0 表示永久有效，课包下所有课程的可学习时间都以课包时间为准。</span>
-            </el-col>
-          </el-row>
+          <el-checkbox-group v-model="dataForm.tags">
+            <el-checkbox v-for="item in tags" :key="item.key" :value="item.key" :label="item.key">{{ item.val }}</el-checkbox>
+          </el-checkbox-group>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="basicInfoHandle">下一步</el-button>
+        <el-form-item label="上传封面" prop="image">
+          <el-col :span="8">
+            <div class="dashboard-coverpicture">
+              <div>
+                <label class="dashboard-cover_picture_label">1:1格式图</label>
+                <div class="dashboard-avataruploader">
+                  <img v-if="dataForm.imageUrl" :src="dataForm.imageUrl" class="dashboard-avatar-img">
+                  <i v-else class="el-icon-plus dashboard-avatar-uploader-icon" />
+                </div>
+              </div>
+              <div class="dashboard-cover_picture_right_box">
+                <el-button
+                  type="primary"
+                  size="medium"
+                  class="dashboard-cover_picture_button"
+                  @click="getMaterialPicture('cover')"
+                >
+                  从素材库中选择
+                </el-button>
+                <el-upload
+                  v-loading="loading"
+                  action="coverActionUrl"
+                  accept=".png,.jpg,.jpeg"
+                  :show-file-list="false"
+                  :on-success="handleCoverSuccess"
+                  :before-upload="beforeUpload"
+                >
+                  <el-button type="primary" size="medium">本地上传</el-button>
+                </el-upload>
+                <span class="dashboard-uploadfont">文件支持类型 jpg/png</span><br>
+                <span class="dashboard-uploadfont">文件大小&lt;2M,建议传274x274</span>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="dashboard-coverpicture">
+              <div>
+                <label class="dashboard-cover_picture_label">横版图</label>
+                <div class="dashboard-horizontal-avatar">
+                  <img v-if="dataForm.horizontalUrl" :src="dataForm.horizontalUrl" class="dashboard-avatar-horizontal-img">
+                  <i v-else class="el-icon-plus dashboard-avatar-uploader-horizontal-icon" />
+                </div>
+              </div>
+              <div class="dashboard-cover_picture_right_box">
+                <el-button
+                  type="primary"
+                  size="medium"
+                  class="dashboard-cover_picture_button"
+                  @click="getMaterialPicture('horizontal')"
+                >
+                  从素材库中选择
+                </el-button>
+                <el-upload
+                  v-loading="loading"
+                  action="horizontalActionUrl"
+                  accept=".png,.jpg,.jpeg"
+                  :show-file-list="false"
+                  :on-success="handleHorizontalSuccess"
+                  :before-upload="horizontalBeforeUpload"
+                >
+                  <el-button type="primary">本地上传</el-button>
+                </el-upload>
+                <span class="dashboard-uploadfont">文件支持类型 jpg/png</span><br>
+                <span class="dashboard-uploadfont">文件大小&lt;2M,建议上传</span>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="dashboard-coverpicture">
+              <div>
+                <label class="dashboard-cover_picture_label">竖版图</label>
+                <div class="dashboard-vertical-avatar">
+                  <img v-if="dataForm.verticalUrl" :src="dataForm.verticalUrl" class="dashboard-avatar-vertical-img">
+                  <i v-else class="el-icon-plus dashboard-avatar-uploader-icon" />
+                </div>
+              </div>
+              <div class="dashboard-cover_picture_right_box">
+                <el-button
+                  type="primary"
+                  size="medium"
+                  class="dashboard-cover_picture_button"
+                  @click="getMaterialPicture('vertical')"
+                >
+                  从素材库中选择
+                </el-button>
+                <el-upload
+                  v-loading="loading"
+                  action="verticalActionUrl"
+                  accept=".png,.jpg,.jpeg"
+                  :show-file-list="false"
+                  :on-success="handleVerticalSuccess"
+                  :before-upload="verticalBeforeUpload"
+                >
+                  <el-button type="primary">本地上传</el-button>
+                </el-upload>
+                <span class="dashboard-uploadfont">文件支持类型 jpg/png</span><br>
+                <span class="dashboard-uploadfont">文件大小&lt;2M,建议上传</span>
+              </div>
+            </div>
+          </el-col>
+        </el-form-item>
+        <el-form-item label="购买后可学习时间" prop="study_days">
+          <el-input-number v-model="dataForm.study_days" placeholder="学习时间" />
+          <span class="dashboard-studyfont">天</span>
+          <span class="dashboard-studynote">注意：0 表示永久有效，课包下所有课程的可学习时间都以课包时间为准。</span>
         </el-form-item>
       </el-form>
+      <el-row style="margin-top: 20px; text-align: center;">
+        <el-button type="primary" @click="basicInfoHandle">下一步</el-button>
+        <el-button type="primary" @click="basicComeback">返回</el-button>
+      </el-row>
     </div>
 
     <div v-if="active === 1">
@@ -121,11 +158,11 @@
           <el-button
             type="warning"
             :disabled="dataListSelections.length <= 0"
-            @click="packageDeleteHandle"
+            @click="batchDeleteHandle"
           >
             批量删除
           </el-button>
-          <el-button type="primary" @click="getChooseCourse()">+选择课程</el-button>
+          <el-button type="primary" @click="getChooseCourse">+选择课程</el-button>
           <span style="color:#f40;font-size:14px;margin-left:10px">可通过设置数字调整排序，默认按照升序排列</span>
         </el-form-item>
         <el-table
@@ -137,7 +174,15 @@
           @selection-change="selectionChangeHandle"
         >
           <el-table-column type="selection" header-align="center" align="center" width="50" />
-          <el-table-column prop="display_order" label="排序" header-align="center" align="center" />
+          <el-table-column prop="display_order" label="排序" header-align="center" align="center" width="65">
+            <template slot-scope="scope">
+              <el-input
+                v-model="scope.row.display_order"
+                @blur.stop="() => submitEdit(scope.row)"
+                @keyup.enter.stop.native="() => submitEdit(scope.row)"
+              />
+            </template>
+          </el-table-column>
           <el-table-column prop="code" label="编号" header-align="center" align="center" />
           <el-table-column prop="name" label="名称" header-align="center" align="center" />
           <el-table-column prop="lesson_type_desc" label="课程类型" header-align="center" align="center" />
@@ -151,9 +196,27 @@
               <el-tag v-for="item in scope.row.categories" :key="item.key">{{ item.val }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="origin_price_desc" label="价格" header-align="center" align="center" />
+          <el-table-column prop="origin_price" label="价格" header-align="center" align="center">
+            <template slot-scope="scope">
+              <div v-if="scope.row.origin_price">
+                {{ scope.row.origin_price|priceFilter(scope.row.origin) }}
+              </div>
+              <div v-if="scope.row.origin_price === 0">
+                {{ scope.row.origin_price_desc }}
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column prop="try_reading_desc" label="是否可试看" header-align="center" align="center" />
-          <el-table-column prop="price_desc" label="最终价" header-align="center" align="center" />
+          <el-table-column prop="price" label="最终价" header-align="center" align="center">
+            <template slot-scope="scope">
+              <div v-if="scope.row.price">
+                {{ scope.row.price|priceFilter(scope.row.price) }}
+              </div>
+              <div v-if="scope.row.price === 0">
+                {{ scope.row.price_desc }}
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" fixed="right" header-align="center" align="center">
             <template slot-scope="scope">
               <el-button type="text" size="small" @click="packageDeleteHandle(scope.row.pk_id)">删除</el-button>
@@ -161,46 +224,45 @@
           </el-table-column>
         </el-table>
         <el-form-item style="margin-top: 15px">
-          <el-button type="warning" @click="selectContentSaveHandle">保存</el-button>
-          <el-button type="primary" @click="selectContentNext">下一步</el-button>
+          <el-button type="primary" @click="previousHandle">上一步</el-button>
+          <el-button v-if="dataForm.id" type="primary" @click="SelectNextStep">下一步</el-button>
+          <el-button type="primary" @click="basicComeback">返回</el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <div v-if="active === 2">
-      <el-form ref="dataForm3" :model="dataForm" label-width="auto" size="medium" label-suffix=":">
+      <el-form ref="dataForm3" :model="dataForm3" :rules="dataRule3" label-width="auto" size="medium" label-suffix=":">
         <el-form-item label="售卖价格">
           <el-form-item prop="isfree">
             <el-col :span="4">
-              <el-radio v-model="dataForm3.isfree" label="2">付费</el-radio>
+              <el-radio-group v-model="dataForm3.isfree">
+                <el-radio :label="2">付费</el-radio>
+                <el-radio :label="1">免费</el-radio>
+              </el-radio-group>
             </el-col>
           </el-form-item>
-          <el-form-item label="总价" prop="price">
+          <el-form-item v-if="dataForm3.isfree === 2" label="总价" prop="price" class="basic-info">
             <el-col :span="6">
-              <el-input v-model="dataForm3.price" :min="0" :max="9999999" placeholder="最大支持两位小数">
-                <template slot="append">元</template>
-              </el-input>
+              <el-input-number v-model="dataForm3.price" :min="0" :max="9999999" placeholder="请输入总价" /> 元
             </el-col>
           </el-form-item>
-          <el-form-item label="划线价" prop="origin_price">
+          <el-form-item v-if="dataForm3.isfree === 2" label="划线价" prop="origin_price" class="basic-info">
             <el-col :span="6">
-              <el-input v-model="dataForm3.origin_price" :min="0" :max="9999999" placeholder="最大支持两位小数">
-                <template slot="append">元</template>
-              </el-input>
+              <el-input-number v-model="dataForm3.origin_price" :min="0" :max="9999999" placeholder="请输入划线价" /> 元
             </el-col>
           </el-form-item>
-          <el-form-item label="价格标识">
+          <el-form-item v-if="dataForm3.isfree === 2" label="价格标识" prop="pricetype" class="basic-info">
             <el-radio-group v-model="dataForm3.pricetype">
               <el-radio v-for="item in dataForm.price_type" :key="item.key" :label="item.key">{{ item.val }}</el-radio>
             </el-radio-group>
             <span style="margin-left: 30px;color:#f40">提示：当设置价格标识后，前台将显示该价格标识</span>
           </el-form-item>
         </el-form-item>
-        <el-form-item prop="isfree">
-          <el-radio v-model="dataForm3.isfree" label="1">免费</el-radio>
-        </el-form-item>
         <el-form-item>
+          <el-button type="primary" @click="contentPreviousHandle">上一步</el-button>
           <el-button type="primary" @click="setPriceHandle">保 存</el-button>
+          <el-button type="primary" @click="basicComeback">返回</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -209,6 +271,10 @@
       ref="LessonPackageChooseCourse"
       :package-id="dataForm.id"
       @refreshDataList="getConnectedContentList"
+    />
+    <select-material-picture
+      ref="SelectMaterialPicture"
+      @refreshPictureDataList="getPictureList"
     />
   </div>
 </template>
@@ -221,28 +287,33 @@ import {
   lessonPackageAdd,
   lessonPackageUpdate,
   getLessonPackageDelete,
-  lessonPackageSetOrder
+  packageUpdateLessonOrder
 } from '@/api/lessonpackage'
 import LessonPackageChooseCourse from './lessonpackage-choose-course'
-import { getNewName } from '@/utils'
-import { DATETIME, SCENES_ONE, SCENES_THREE } from '@/utils/global-element'
+import SelectMaterialPicture from '@/components/SelectMaterialPicture/index'
+import { materialAdd } from '@/api/material'
+import { getNewName, getTime } from '@/utils'
+import { SCENES_ONE, TYPE_PICTURE, SCENES_THREE } from '@/utils/global-element'
 import { ossUpload } from '@/api/oss'
 import axios from 'axios'
 export default {
   name: 'AddOrUpdateLessonPackage',
   components: {
-    LessonPackageChooseCourse
+    LessonPackageChooseCourse,
+    SelectMaterialPicture
   },
   data() {
     return {
-      active: 0,
+      active: parseInt(sessionStorage.getItem('package')),
+      token: '', // token
       dataListSelections: [], // 多选
       pageIndex: 1,
       pageSize: 10,
       totalPage: 0,
+      filesize: '', // 图片大小
       dataForm: {
-        id: '', // 课包id
-        code: DATETIME, // 课程编号
+        id: 0, // 课包id
+        code: getTime(), // 课程编号
         name: '', // 课包名称
         desc: '', // 课包描述
         tags: [], // 选中标签
@@ -250,14 +321,26 @@ export default {
         horizontalUrl: '', // 横版图
         verticalUrl: '', // 竖版图
         fileList: [], // 封面
-        study_days: '' // 学习时间天数
+        study_days: 0 // 学习时间天数
+      },
+      dataRule: {
+        code: [{ required: true, message: '课包编号不能为空', trigger: 'blur' }],
+        name: [{ required: true, message: '课包名称不能为空', trigger: 'blur' }],
+        desc: [{ required: true, message: '备注信息不能为空', trigger: 'blur' }],
+        study_days: [{ required: true, message: '学习时间不能为空', trigger: 'blur' }]
       },
       dataForm3: {
-        isfree: '1', // 是否免费 2: 收费 1: 免费
+        isfree: 1, // 是否免费 2: 收费 1: 免费
         pricetype: '',
         price_type: [], // 价格标识枚举
-        price: '', // 总价
-        origin_price: '' // 划线价对应
+        price: 0, // 总价
+        origin_price: 0 // 划线价对应
+      },
+      dataRule3: {
+        isfree: [{ required: true, message: '请选择售卖价格', trigger: 'blur' }],
+        price: [{ required: true, message: '请输入总价', trigger: 'blur' }],
+        origin_price: [{ required: true, message: '请输入划线价', trigger: 'blur' }],
+        pricetype: [{ required: true, message: '请选择价格标识', trigger: 'blur' }]
       },
       dataListLoading: false,
       loading: false,
@@ -265,21 +348,35 @@ export default {
       tags: [], // 获取标签列表
       tv: '',
       // 上传图片地址
-      actionUrl: 'http://gitbook.eceibs.com.cn/saas30/_book/api/mobile.html#modify-avatar',
+      coverActionUrl: '',
+      horizontalActionUrl: '',
+      verticalActionUrl: '',
       fileList: [],
-      carryData: {
+      horizontalList: [], // 横板图
+      verticalList: [], // 竖版图
+      coverCarryData: {
         success_action_status: '200'
       },
-      validTime: ''
+      coverValidTime: '',
+      horizontalCarryData: {
+        success_action_status: '200'
+      },
+      horizontalValidTime: '',
+      verticalCarryData: {
+        success_action_status: '200'
+      },
+      verticalValidTime: ''
     }
   },
   created() {
+    this.$route.meta.title = '创建课包'
     // 获取标签
     this.getStatusTag()
     // 获取上传token
     this.getToken()
     // 获取路由id
     if (this.$route.query.packageid) {
+      this.$route.meta.title = '编辑课包'
       this.dataForm.id = this.$route.query.packageid
       this.getPackageList()
     }
@@ -300,6 +397,26 @@ export default {
     selectionChangeHandle(val) {
       this.dataListSelections = val
     },
+    // 封面上传至素材库
+    uploadMaterialLibrary(params = {}) {
+      materialAdd(this.$service.adornData({
+        'code': this.dataForm.code,
+        'name': this.dataForm.code,
+        'size': this.filesize.toString(),
+        'type': TYPE_PICTURE,
+        ...params
+      })).then(res => {
+        if (res && res.code === 0) {
+          this.$message({
+            message: '素材添加成功',
+            type: 'success',
+            duration: 1500
+          })
+        } else {
+          this.$message.error(res.msg)
+        }
+      })
+    },
     // 获取课包标签
     getStatusTag() {
       getCourseFilters(this.$service.adornData({
@@ -318,23 +435,22 @@ export default {
     // 通过课程id，获取课程列表
     getPackageList() {
       getLessonPackageList(this.$service.adornData({
-        'id': this.dataForm.id
+        'id': parseInt(this.dataForm.id)
       })).then(res => {
         if (res && res.code === 0) {
-          const courselist = res.data.list[0]
-          this.dataForm.code = courselist.code
-          this.dataForm.name = courselist.name
-          this.dataForm.desc = courselist.desc
-          this.dataForm.tag_list = courselist.tags
-          this.dataForm.classification = courselist.categories[0].key
-          this.dataForm.imageUrl = courselist.cover
-          this.dataForm.horizontalUrl = courselist.horizontal
-          this.dataForm.verticalUrl = courselist.vertical
-          this.dataForm.study_days = courselist.study_days
-          this.dataForm3.isfree = courselist.is_free
-          this.dataForm3.origin_price = courselist.origin_price
-          this.dataForm3.price = courselist.price
-          this.dataForm3.pricetype = courselist.price_type_id
+          const lessonlist = res.data.list[0]
+          this.dataForm.code = lessonlist.code
+          this.dataForm.name = lessonlist.name
+          this.dataForm.desc = lessonlist.desc
+          this.dataForm.tags = lessonlist.tags.map(item => item.key)
+          this.dataForm.imageUrl = lessonlist.cover
+          this.dataForm.horizontalUrl = lessonlist.horizontal
+          this.dataForm.verticalUrl = lessonlist.vertical
+          this.dataForm.study_days = lessonlist.study_days
+          this.dataForm3.isfree = lessonlist.is_free
+          this.dataForm3.origin_price = lessonlist.origin_price
+          this.dataForm3.price = lessonlist.price
+          this.dataForm3.pricetype = lessonlist.price_type_id
         } else {
           this.$message.error(res.msg)
         }
@@ -344,13 +460,38 @@ export default {
     getToken() {
       ossUpload().then(response => {
         if (response && response.code === 0) {
-          this.getPolicy(response.data.token)
+          this.token = response.data.token
+          this.coverGetPolicy(response.data.token)
+          this.horizontalGetPolicy(response.data.token)
+          this.verticalGetPolicy(response.data.token)
         } else {
           this.$message.error('获取图片上传token失败')
         }
       })
     },
-    // 基本信息 下一步
+    // 获取素材图片
+    getMaterialPicture(type) {
+      sessionStorage.setItem('cover', type)
+      this.$refs.SelectMaterialPicture.openDialog()
+      this.$nextTick(() => {
+        this.$refs.SelectMaterialPicture.getDataList()
+        this.$refs.SelectMaterialPicture.getCategoryList()
+      })
+    },
+    getPictureList(val) {
+      switch (sessionStorage.getItem('cover')) {
+        case 'cover':
+          this.dataForm.imageUrl = val.entity_id
+          break
+        case 'horizontal':
+          this.dataForm.horizontalUrl = val.entity_id
+          break
+        case 'vertical':
+          this.dataForm.verticalUrl = val.entity_id
+          break
+      }
+    },
+    // 基本信息 保存
     basicInfoHandle() {
       if (this.dataForm.id) {
         this.updatePackageBasicInfo()
@@ -358,95 +499,125 @@ export default {
         this.addPackageBasicInfo()
       }
     },
-    // 创建课程第一步
+    // 基本信息下一步
+    basicNextStepHandle() {
+      this.getConnectedContentList()
+      if (this.active++ > 2) this.active = 0
+    },
+    // 选择内容 - 上一步
+    previousHandle() {
+      if (this.active > 0) {
+        sessionStorage.setItem('package', 0)
+        this.active = parseInt(sessionStorage.getItem('package'))
+      }
+    },
+    // 设置价格 - 上一步
+    contentPreviousHandle() {
+      if (this.active > 0) {
+        sessionStorage.setItem('package', 1)
+        this.active = parseInt(sessionStorage.getItem('package'))
+      }
+    },
+    // 基本信息 - 返回
+    basicComeback() {
+      this.$router.replace({ path: '/course/lesson-package' })
+    },
+    // 选择内容 - 下一步
+    SelectNextStep() {
+      // if (this.active++ > 2) this.active = 0
+      sessionStorage.setItem('package', 2)
+      this.active = parseInt(sessionStorage.getItem('package'))
+    },
+    // 创建课包第一步
     addPackageBasicInfo() {
-      const tag = []
-      this.dataForm.tags.forEach(item => tag.push(item[0]))
-      lessonPackageAdd(this.$service.adornData({
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'description': this.dataForm.desc,
-        'cover': this.dataForm.imageUrl,
-        'tag_key': tag,
-        'horizontal': this.dataForm.horizontalUrl,
-        'vertical': this.dataForm.verticalUrl,
-        'study_days': parseInt(this.dataForm.study_days),
-        'scenes': SCENES_ONE
-      })).then(res => {
-        if (res && res.code === 0) {
-          this.dataForm.id = res.data.id
-          this.$message({
-            message: '课包基本信息添加成功',
-            type: 'success',
-            duration: 1500
+      this.$refs.dataForm.validate((valid) => {
+        if (valid) {
+          lessonPackageAdd(this.$service.adornData({
+            'code': this.dataForm.code,
+            'name': this.dataForm.name,
+            'desc': this.dataForm.desc,
+            'cover': this.dataForm.imageUrl,
+            'tag_key': this.dataForm.tags,
+            'horizontal': this.dataForm.horizontalUrl,
+            'vertical': this.dataForm.verticalUrl,
+            'study_days': parseInt(this.dataForm.study_days),
+            'scenes': SCENES_ONE
+          })).then(res => {
+            if (res && res.code === 0) {
+              this.dataForm.id = res.data.id
+              this.$message({
+                message: '课包基本信息添加成功',
+                type: 'success',
+                duration: 1500,
+                onClose: () => {
+                  sessionStorage.setItem('package', 1)
+                  this.active = parseInt(sessionStorage.getItem('package'))
+                }
+              })
+            } else {
+              this.$message.error(res.msg)
+            }
           })
-          if (this.active++ > 2) this.active = 0
         } else {
-          this.$message.error(res.msg)
+          return false
         }
       })
     },
     // 更新课程第一步
     updatePackageBasicInfo() {
-      const tag = []
-      this.dataForm.tags.forEach(item => tag.push(item[0]))
-      lessonPackageUpdate(this.$service.adornData({
-        'id': this.dataForm.id,
-        'code': this.dataForm.code,
-        'name': this.dataForm.name,
-        'description': this.dataForm.desc,
-        'tag_key': tag,
-        'cover': this.dataForm.imageUrl,
-        'horizontal': this.dataForm.horizontalUrl,
-        'vertical': this.dataForm.verticalUrl,
-        'study_days': parseInt(this.dataForm.study_days),
-        'scenes': SCENES_ONE
+      this.$refs.dataForm.validate((valid) => {
+        if (valid) {
+          lessonPackageUpdate(this.$service.adornData({
+            'id': parseInt(this.dataForm.id),
+            'code': this.dataForm.code,
+            'name': this.dataForm.name,
+            'description': this.dataForm.desc,
+            'tag_key': this.dataForm.tags,
+            'cover': this.dataForm.imageUrl,
+            'horizontal': this.dataForm.horizontalUrl,
+            'vertical': this.dataForm.verticalUrl,
+            'study_days': parseInt(this.dataForm.study_days),
+            'scenes': SCENES_ONE
+          })).then(res => {
+            if (res && res.code === 0) {
+              this.$message({
+                message: '课包信息更新成功',
+                type: 'success',
+                duration: 1500,
+                onClose: () => {
+                  sessionStorage.setItem('package', 1)
+                  this.getConnectedContentList()
+                  this.active = parseInt(sessionStorage.getItem('package'))
+                }
+              })
+            } else {
+              this.$message.error(res.msg)
+            }
+          })
+        } else {
+          return false
+        }
+      })
+    },
+    // 内容 - 排序
+    submitEdit(data) {
+      packageUpdateLessonOrder(this.$service.adornData({
+        'id': parseInt(data.pk_id),
+        'display_order': parseInt(data.display_order)
       })).then(res => {
         if (res && res.code === 0) {
           this.$message({
-            message: '课包信息更新成功',
+            message: '排序更新成功',
             type: 'success',
-            duration: 1500
+            duration: 1500,
+            onClose: () => {
+              this.getConnectedContentList()
+            }
           })
-          this.getPackageList()
-          if (this.active++ > 1) this.active = 0
         } else {
           this.$message.error(res.msg)
         }
       })
-    },
-    // 选择内容 - 保存
-    selectContentSaveHandle() {
-      if (this.dataListSelections) {
-        const packageData = []
-        this.dataListSelections.forEach(item => {
-          const packageList = {
-            package_id: item.pk_id,
-            display_order: parseInt(item.display_order)
-          }
-          packageData.push(packageList)
-        })
-        console.log('参数=', this.$service.adornData({
-          'package_id': this.dataForm.id,
-          'items': packageData
-        }))
-        lessonPackageSetOrder(this.$service.adornData({
-          'items': packageData
-        })).then(res => {
-          if (res && res.code === 0) {
-            this.$message({
-              message: '添加成功',
-              type: 'success',
-              duration: 1500
-            })
-            if (this.active++ > 2) this.active = 0
-          } else {
-            this.$message.error(res.msg)
-          }
-        })
-      } else {
-        this.$message.warning('请选择课程')
-      }
     },
     // 选择内容后直接 - 下一步
     selectContentNext() {
@@ -468,43 +639,36 @@ export default {
     },
     // 设置价格 - 收费
     chargeHandle() {
-      console.log('收费=', this.$service.adornData({
-        'id': this.dataForm.id,
-        'is_free': parseInt(this.dataForm3.isfree),
-        'origin_price': parseInt(this.dataForm3.origin_price),
-        'price': parseInt(this.dataForm3.price),
-        'price_type_id': parseInt(this.dataForm3.pricetype),
-        'scenes': SCENES_THREE
-      }))
-      lessonPackageUpdate(this.$service.adornData({
-        'id': this.dataForm.id,
-        'is_free': parseInt(this.dataForm3.isfree),
-        'origin_price': parseInt(this.dataForm3.origin_price),
-        'price': parseInt(this.dataForm3.price),
-        'price_type_id': parseInt(this.dataForm3.pricetype),
-        'scenes': SCENES_THREE
-      })).then(res => {
-        if (res && res.code === 0) {
-          this.$message({
-            message: '价格设置成功',
-            type: 'success',
-            duration: 1500
+      this.$refs.dataForm3.validate((valid) => {
+        if (valid) {
+          lessonPackageUpdate(this.$service.adornData({
+            'id': parseInt(this.dataForm.id),
+            'is_free': parseInt(this.dataForm3.isfree),
+            'origin_price': parseInt(this.dataForm3.origin_price),
+            'price': parseInt(this.dataForm3.price),
+            'price_type_id': parseInt(this.dataForm3.pricetype),
+            'scenes': SCENES_THREE
+          })).then(res => {
+            if (res && res.code === 0) {
+              this.$message({
+                message: '价格设置成功',
+                type: 'success',
+                duration: 1500
+              })
+              this.$router.replace({ path: '/course/lesson-package' })
+            } else {
+              this.$message.error(res.msg)
+            }
           })
-          this.$router.replace({ path: '/course/lesson-package' })
         } else {
-          this.$message.error(res.msg)
+          return false
         }
       })
     },
     // 设置价格 - 免费
     freeHandle() {
-      console.log('免费==', this.$service.adornData({
-        'id': this.dataForm.id,
-        'is_free': parseInt(this.dataForm3.isfree),
-        'scenes': SCENES_THREE
-      }))
       lessonPackageUpdate(this.$service.adornData({
-        'id': this.dataForm.id,
+        'id': parseInt(this.dataForm.id),
         'is_free': parseInt(this.dataForm3.isfree),
         'scenes': SCENES_THREE
       })).then(res => {
@@ -520,12 +684,12 @@ export default {
         }
       })
     },
-    // 设置课程章节 - 获取已关联内容列表
+    // 设置课包章节 - 已关联课程 - 列表
     getConnectedContentList() {
       getLessonPackageSelected(this.$service.adornData({
         'page': this.pageIndex,
         'size': this.pageSize,
-        'lesson_id': this.dataForm.id
+        'package_id': parseInt(this.dataForm.id)
       })).then(res => {
         this.packageDataList = res && res.code === 0 ? res.data.list : []
         this.totalPage = res && res.code === 0 ? res.data.total_size : []
@@ -533,16 +697,16 @@ export default {
     },
     // 课包管理 - 批量删除课包与课程关系
     packageDeleteHandle(id) {
-      var packageIds = id ? [id] : this.dataListSelections.map(item => {
-        return item.pk_id
-      })
-      this.$confirm(`确定对课程进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
+      this.$confirm(`确定对课程进行[删除]操作?`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
+        console.log('删除课包与课程关系', this.$service.adornData({
+          'ids': [id]
+        }))
         getLessonPackageDelete(this.$service.adornData({
-          'ids': packageIds
+          'ids': [id]
         })).then((data) => {
           if (data && data.code === 0) {
             this.$message({
@@ -557,36 +721,122 @@ export default {
         })
       }).catch(() => {})
     },
+    // 课包管理 - 批量删除课包与课程关系
+    batchDeleteHandle() {
+      const packagelist = []
+      this.dataListSelections.forEach(item => packagelist.push(item.pk_id))
+      this.$confirm(`确定对课程进行[批量删除]操作?`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        console.log('批量删除课包与课程关系', this.$service.adornData({
+          'ids': packagelist
+        }))
+        getLessonPackageDelete(this.$service.adornData({
+          'ids': packagelist
+        })).then((data) => {
+          if (data && data.code === 0) {
+            this.$message({
+              message: '课程批量删除成功',
+              type: 'success',
+              duration: 1500
+            })
+            this.getConnectedContentList()
+          } else {
+            this.$message.error(data.msg)
+          }
+        })
+      }).catch(() => {})
+    },
     // 选择课程
     getChooseCourse() {
       this.$refs.LessonPackageChooseCourse.openDialog()
+      this.$nextTick(() => {
+        this.$refs.LessonPackageChooseCourse.getDataList()
+        this.$refs.LessonPackageChooseCourse.getStatusTag()
+      })
     },
-    // 获取签名
-    getPolicy(token) {
+    // 获取封面签名
+    coverGetPolicy(token) {
       return new Promise((resolve, reject) => {
         if (process.env.NODE_ENV === 'production') {
-          this.url = process.env.VUE_APP_UPLOADURL
+          this.url = process.env.VUE_APP_UPLOADOSSURL
         } else {
-          this.url = `${process.env.VUE_APP_UPLOADURL}`
+          this.url = `${process.env.VUE_APP_UPLOADOSSURL}`
         }
         axios.get(this.url + 'v1/coss/file/get-web-upload-sign' + '?type=image&token=' + token)
           .then(res => {
-            this.actionUrl = res.data.result.host
-            this.carryData.OSSAccessKeyId = res.data.result.accessid
-            this.carryData.policy = res.data.result.policy
-            this.carryData.Signature = res.data.result.signature
-            this.carryData.key = res.data.result.dir
-            this.validTime = res.data.result.expire
+            this.coverActionUrl = res.data.result.host
+            this.coverCarryData.OSSAccessKeyId = res.data.result.accessid
+            this.coverCarryData.policy = res.data.result.policy
+            this.coverCarryData.Signature = res.data.result.signature
+            this.coverCarryData.key = res.data.result.dir
+            this.coverValidTime = res.data.result.expire
             resolve(res.data)
           }).catch(() => {
             reject()
           })
       })
     },
+    // 获取横版签名
+    horizontalGetPolicy(token) {
+      return new Promise((resolve, reject) => {
+        if (process.env.NODE_ENV === 'production') {
+          this.url = process.env.VUE_APP_UPLOADOSSURL
+        } else {
+          this.url = `${process.env.VUE_APP_UPLOADOSSURL}`
+        }
+        axios.get(this.url + 'v1/coss/file/get-web-upload-sign' + '?type=image&token=' + token)
+          .then(res => {
+            this.horizontalActionUrl = res.data.result.host
+            this.horizontalCarryData.OSSAccessKeyId = res.data.result.accessid
+            this.horizontalCarryData.policy = res.data.result.policy
+            this.horizontalCarryData.Signature = res.data.result.signature
+            this.horizontalCarryData.key = res.data.result.dir
+            this.horizontalValidTime = res.data.result.expire
+            resolve(res.data)
+          }).catch(() => {
+            reject()
+          })
+      })
+    },
+    // 获取竖版签名
+    verticalGetPolicy(token) {
+      return new Promise((resolve, reject) => {
+        if (process.env.NODE_ENV === 'production') {
+          this.url = process.env.VUE_APP_UPLOADOSSURL
+        } else {
+          this.url = `${process.env.VUE_APP_UPLOADOSSURL}`
+        }
+        axios.get(this.url + 'v1/coss/file/get-web-upload-sign' + '?type=image&token=' + token)
+          .then(res => {
+            this.verticalActionUrl = res.data.result.host
+            this.verticalCarryData.OSSAccessKeyId = res.data.result.accessid
+            this.verticalCarryData.policy = res.data.result.policy
+            this.verticalCarryData.Signature = res.data.result.signature
+            this.verticalCarryData.key = res.data.result.dir
+            this.verticalValidTime = res.data.result.expire
+            resolve(res.data)
+          }).catch(() => {
+            reject()
+          })
+      })
+    },
+    handleCoverSuccess(res, file) {
+      this.fileList = []
+    },
+    handleHorizontalSuccess(res, file) {
+      this.horizontalList = []
+    },
+    handleVerticalSuccess(res, file) {
+      this.verticalList = []
+    },
     // 自动上传拦截
     beforeUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg'
       const isLt2M = file.size / 1024 / 1024 < 2
+      this.filesize = file.size
 
       if (!isJPG) {
         this.$message.error('上传图片只能是 JPG 格式!')
@@ -596,46 +846,191 @@ export default {
       }
       this.fileList = [...this.fileList, file]
       this.handleUpload(file.name)
-      return false
+      return true
     },
     // 手动上传图片
     handleUpload(fileName) {
       this.loading = true // 加载loading
-      this.carryData.key = `${this.carryData.key}${getNewName(fileName)}` // 保存图片名
+      const coverkey = `${this.coverCarryData.key}${getNewName(fileName)}` // 保存图片名
       const formData = new FormData() // form表单
       const timestamp = `${new Date().getTime()}` // 时间戳
       formData.append('name', fileName)
-      for (const key in this.carryData) {
+      for (const key in this.coverCarryData) {
         if (key !== 'key') {
-          formData.append(key, this.carryData[key])
+          formData.append(key, this.coverCarryData[key])
         }
       }
-      if (parseInt(timestamp.substr(0, 10)) >= this.validTime) {
+      if (parseInt(timestamp.substr(0, 10)) >= this.coverValidTime) {
         // 判断签名是否过期
         this.getToken().then(() => {
           // 重新请求签名
-          this.carryData.key = `${this.carryData.key}${getNewName(fileName)}`
-          formData.append('key', this.carryData.key)
-          this.uploadingImg(formData)
+          this.coverGetPolicy()
+          const coverkey = `${this.coverCarryData.key}${getNewName(fileName)}`
+          formData.append('key', coverkey)
+          this.uploadingImg(formData, coverkey)
         })
       } else {
-        formData.append('key', this.carryData.key)
-        this.uploadingImg(formData)
+        formData.append('key', coverkey)
+        this.uploadingImg(formData, coverkey)
       }
     },
     // 上传图片到阿里云
-    uploadingImg(formData) {
+    uploadingImg(formData, coverkey) {
       this.fileList.forEach(file => {
         formData.append('file', file)
       })
-      axios.post(`${this.actionUrl}`, formData).then(res => {
+      axios.post(`${this.coverActionUrl}`, formData).then(res => {
         if (res.status === 200) {
-          this.dataForm.imageUrl = this.actionUrl + '/' + this.carryData.key
+          if (process.env.NODE_ENV === 'production') {
+            this.dataForm.imageUrl = `${process.env.VUE_APP_IMAGEURL}` + '/' + coverkey
+          } else {
+            this.dataForm.imageUrl = this.coverActionUrl + '/' + coverkey
+          }
           this.$message({
             message: '图片上传成功',
             type: 'success',
-            duration: 1500
+            duration: 1500,
+            onClose: () => {
+              this.uploadMaterialLibrary({ 'entity_id': this.dataForm.imageUrl })
+            }
           })
+          this.fileList = []
+          this.loading = false
+        } else {
+          this.$message.error('图片上传失败')
+        }
+      })
+    },
+    // 横版图上传
+    horizontalBeforeUpload(file) {
+      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg'
+      const isLt2M = file.size / 1024 / 1024 < 2
+      this.filesize = file.size
+
+      if (!isJPG) {
+        this.$message.error('上传图片只能是 JPG 格式!')
+      }
+      if (!isLt2M) {
+        this.$message.error('上传图片大小不能超过 2MB!')
+      }
+      this.horizontalList = [...this.horizontalList, file]
+      this.horizontalHandleUpload(file.name)
+      return false
+    },
+    // 手动上传图片
+    horizontalHandleUpload(fileName) {
+      this.loading = true // 加载loading
+      const horizontalkey = `${this.horizontalCarryData.key}${getNewName(fileName)}` // 保存图片名
+      const formData = new FormData() // form表单
+      const timestamp = `${new Date().getTime()}` // 时间戳
+      formData.append('name', fileName)
+      for (const key in this.horizontalCarryData) {
+        if (key !== 'key') {
+          formData.append(key, this.horizontalCarryData[key])
+        }
+      }
+      if (parseInt(timestamp.substr(0, 10)) >= this.horizontalValidTime) {
+        // 判断签名是否过期
+        this.getToken().then(() => {
+          // 重新请求签名
+          const horizontalkey = `${this.horizontalCarryData.key}${getNewName(fileName)}`
+          formData.append('key', horizontalkey)
+          this.uploadingImg(formData, horizontalkey)
+        })
+      } else {
+        formData.append('key', horizontalkey)
+        this.horizontalUploadingImg(formData, horizontalkey)
+      }
+    },
+    // 上传横版图到阿里云
+    horizontalUploadingImg(formData, horizontalkey) {
+      this.horizontalList.forEach(file => {
+        formData.append('file', file)
+      })
+      axios.post(`${this.horizontalActionUrl}`, formData).then(res => {
+        if (res.status === 200) {
+          if (process.env.NODE_ENV === 'production') {
+            this.dataForm.horizontalUrl = `${process.env.VUE_APP_IMAGEURL}` + '/' + horizontalkey
+          } else {
+            this.dataForm.horizontalUrl = this.horizontalActionUrl + '/' + horizontalkey
+          }
+          this.$message({
+            message: '图片上传成功',
+            type: 'success',
+            duration: 1500,
+            onClose: () => {
+              this.uploadMaterialLibrary({ 'entity_id': this.dataForm.horizontalUrl })
+            }
+          })
+          this.horizontalList = []
+          this.loading = false
+        } else {
+          this.$message.error('图片上传失败')
+        }
+      })
+    },
+    // 竖版图上传
+    verticalBeforeUpload(file) {
+      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg'
+      const isLt2M = file.size / 1024 / 1024 < 2
+      this.filesize = file.size
+
+      if (!isJPG) {
+        this.$message.error('上传图片只能是 JPG 格式!')
+      }
+      if (!isLt2M) {
+        this.$message.error('上传图片大小不能超过 2MB!')
+      }
+      this.verticalList = [...this.verticalList, file]
+      this.verticalHandleUpload(file.name)
+      return false
+    },
+    // 竖版图上传
+    verticalHandleUpload(fileName) {
+      this.loading = true // 加载loading
+      const verticalkey = `${this.verticalCarryData.key}${getNewName(fileName)}` // 保存图片名
+      const formData = new FormData() // form表单
+      const timestamp = `${new Date().getTime()}` // 时间戳
+      formData.append('name', fileName)
+      for (const key in this.verticalCarryData) {
+        if (key !== 'key') {
+          formData.append(key, this.verticalCarryData[key])
+        }
+      }
+      if (parseInt(timestamp.substr(0, 10)) >= this.verticalValidTime) {
+        // 判断签名是否过期
+        this.getToken().then(() => {
+          // 重新请求签名
+          const verticalkey = `${this.verticalCarryData.key}${getNewName(fileName)}`
+          formData.append('key', verticalkey)
+          this.uploadingImg(formData, verticalkey)
+        })
+      } else {
+        formData.append('key', verticalkey)
+        this.verticalUploadingImg(formData, verticalkey)
+      }
+    },
+    // 上传横版图到阿里云
+    verticalUploadingImg(formData, verticalkey) {
+      this.verticalList.forEach(file => {
+        formData.append('file', file)
+      })
+      axios.post(`${this.verticalActionUrl}`, formData).then(res => {
+        if (res.status === 200) {
+          if (process.env.NODE_ENV === 'production') {
+            this.dataForm.verticalUrl = `${process.env.VUE_APP_IMAGEURL}` + '/' + verticalkey
+          } else {
+            this.dataForm.verticalUrl = this.verticalActionUrl + '/' + verticalkey
+          }
+          this.$message({
+            message: '图片上传成功',
+            type: 'success',
+            duration: 1500,
+            onClose: () => {
+              this.uploadMaterialLibrary({ 'entity_id': this.dataForm.verticalUrl })
+            }
+          })
+          this.verticalList = []
           this.loading = false
         } else {
           this.$message.error('图片上传失败')
@@ -661,7 +1056,7 @@ export default {
   }
 }
 .basic-info {
-  margin-top: 5px;
+  margin-top: 18px;
 }
  /deep/ .avatar-uploader .el-upload {
     border: 1px dashed #d9d9d9;
@@ -685,10 +1080,6 @@ export default {
     width: 150px;
     height: 150px;
     display: block;
-  }
-  .uploadfont {
-    line-height:4px;
-    color: #8c939d;
   }
 
 </style>
